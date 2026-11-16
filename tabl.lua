@@ -1,4 +1,4 @@
--- tabl.lua (Окно + Вкладки + Ключ + Stats + Загрузка файлов)
+-- tabl.lua (Окно + Вкладки + Ключ (без ID) + Stats + Загрузка файлов)
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local Stats = game:GetService("Stats")
@@ -175,7 +175,7 @@ MinimizeButton.MouseButton1Click:Connect(function()
 end)
 
 -- =========================================================
--- СИСТЕМА КЛЮЧА
+-- СИСТЕМА КЛЮЧА (БЕЗ ПРОВЕРКИ ID)
 -- =========================================================
 local LockOverlay = Instance.new("Frame")
 LockOverlay.Name = "LockOverlay"
@@ -228,7 +228,7 @@ local KeyStatus = Instance.new("TextLabel")
 KeyStatus.Size = UDim2.new(1, -14, 0, 18)
 KeyStatus.Position = UDim2.new(0, 7, 0, 126)
 KeyStatus.BackgroundTransparency = 1
-KeyStatus.Text = "Ключ привязан строго к ID пользователя"
+KeyStatus.Text = "Ключ для доступа"
 KeyStatus.TextColor3 = Color3.fromRGB(200, 200, 200)
 KeyStatus.Font = Enum.Font.SourceSans
 KeyStatus.TextSize = 11
@@ -270,10 +270,11 @@ local function loadTab(name)
 end
 
 UnlockButton.MouseButton1Click:Connect(function()
-    KeyStatus.Text = "Ключ привязан строго к ID пользователя"
+    KeyStatus.Text = "Ключ для доступа"
     KeyStatus.TextColor3 = Color3.fromRGB(200, 200, 200)
 
-    if Player.UserId == 11979107741 and KeyInput.Text == "ABC" then
+    -- ПРОВЕРКА БЕЗ ID: только ключ "ABC"
+    if KeyInput.Text == "ABC" then
         FCS.Unlocked = true
         KeyStatus.Text = "Скрипт разблокирован! ;3"
         KeyStatus.TextColor3 = Color3.fromRGB(0, 255, 0)
@@ -287,15 +288,15 @@ UnlockButton.MouseButton1Click:Connect(function()
         Message("Скрипт успешно разблокирован :D", "Нихуя ты молодец", 5)
         for name, _ in pairs(files) do loadTab(name) end
     else
-        KeyStatus.Text = "Неверный ключ или нет доступа!"
+        KeyStatus.Text = "Неверный ключ!"
         KeyStatus.TextColor3 = Color3.fromRGB(255, 80, 80)
-        Message("КЛЮЧ МОЖНО ПОЛУЧИТЬ ЗДЕСЬ", ".gg/uJxKthGVxU", 5)
+        Message("НЕВЕРНЫЙ КЛЮЧ", "Попробуй ABC", 5)
     end
 end)
 
 KeyInput:GetPropertyChangedSignal("Text"):Connect(function()
     if not FCS.Unlocked then
-        KeyStatus.Text = "Ключ привязан строго к ID пользователя"
+        KeyStatus.Text = "Ключ для доступа"
         KeyStatus.TextColor3 = Color3.fromRGB(200, 200, 200)
     end
 end)
