@@ -1,4 +1,4 @@
--- tabl.lua (Окно + Вкладки + Оригинальный Ключ + Stats + Загрузка файлов)
+-- tabl.lua (Окно + Вкладки + Ключ + Stats + Загрузка файлов)
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local Stats = game:GetService("Stats")
@@ -175,7 +175,7 @@ MinimizeButton.MouseButton1Click:Connect(function()
 end)
 
 -- =========================================================
--- СИСТЕМА КЛЮЧА (ОРИГИНАЛ)
+-- СИСТЕМА КЛЮЧА
 -- =========================================================
 local LockOverlay = Instance.new("Frame")
 LockOverlay.Name = "LockOverlay"
@@ -184,6 +184,7 @@ LockOverlay.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 LockOverlay.BackgroundTransparency = 0.05
 LockOverlay.BorderSizePixel = 0
 LockOverlay.ZIndex = 10
+LockOverlay.Active = true
 LockOverlay.Parent = MainFrame
 
 local lockTitle = Instance.new("TextLabel")
@@ -197,7 +198,7 @@ lockTitle.TextSize = 14
 lockTitle.ZIndex = 11
 lockTitle.Parent = LockOverlay
 
-local KeyInput = Instance.new("")
+local KeyInput = Instance.new("TextBox")
 KeyInput.Size = UDim2.new(1, -14, 0, 28)
 KeyInput.Position = UDim2.new(0, 7, 0, 50)
 KeyInput.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
@@ -234,8 +235,11 @@ KeyStatus.TextSize = 11
 KeyStatus.ZIndex = 11
 KeyStatus.Parent = LockOverlay
 
+task.wait(0.1)
+KeyInput:ReleaseFocus()
+
 -- =========================================================
--- ССЫЛКИ НА ТВОИ ФАЙЛЫ
+-- ССЫЛКИ НА ФАЙЛЫ
 -- =========================================================
 local files = {
     Home = "https://raw.githubusercontent.com/hizolon/test/refs/heads/main/home.lua",
@@ -265,9 +269,6 @@ local function loadTab(name)
     end)
 end
 
--- =========================================================
--- ЛОГИКА РАЗБЛОКИРОВКИ
--- =========================================================
 UnlockButton.MouseButton1Click:Connect(function()
     KeyStatus.Text = "Ключ привязан строго к ID пользователя"
     KeyStatus.TextColor3 = Color3.fromRGB(200, 200, 200)
@@ -284,11 +285,7 @@ UnlockButton.MouseButton1Click:Connect(function()
         MainFrame.Active = true
         showPage("Home")
         Message("Скрипт успешно разблокирован :D", "Нихуя ты молодец", 5)
-        
-        -- Загрузка вкладок
-        for name, _ in pairs(files) do
-            loadTab(name)
-        end
+        for name, _ in pairs(files) do loadTab(name) end
     else
         KeyStatus.Text = "Неверный ключ или нет доступа!"
         KeyStatus.TextColor3 = Color3.fromRGB(255, 80, 80)
@@ -304,26 +301,22 @@ KeyInput:GetPropertyChangedSignal("Text"):Connect(function()
 end)
 
 -- =========================================================
--- STATS GUI (СВЕРХУ ЭКРАНА)
+-- STATS
 -- =========================================================
 local function startStatsGui()
     local W, H, SP, Y = 64, 24, 6, 10
     local guiParent = Player:WaitForChild("PlayerGui", 10)
     if not guiParent then return end
-
     local old = guiParent:FindFirstChild("ServerStatsGUI")
     if old then old:Destroy() end
-
     local StatsScreenGui = Instance.new("ScreenGui")
     StatsScreenGui.Name = "ServerStatsGUI"
     StatsScreenGui.ResetOnSpawn = false
     StatsScreenGui.IgnoreGuiInset = true
     StatsScreenGui.DisplayOrder = 999
     StatsScreenGui.Parent = guiParent
-
     local COUNT = 5
     local totalW = COUNT * W + (COUNT - 1) * SP
-
     local container = Instance.new("Frame")
     container.Name = "StatsRow"
     container.Size = UDim2.fromOffset(totalW, H)
@@ -332,7 +325,6 @@ local function startStatsGui()
     container.BackgroundTransparency = 1
     container.BorderSizePixel = 0
     container.Parent = StatsScreenGui
-
     local layout = Instance.new("UIListLayout")
     layout.FillDirection = Enum.FillDirection.Horizontal
     layout.SortOrder = Enum.SortOrder.LayoutOrder
@@ -340,7 +332,6 @@ local function startStatsGui()
     layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
     layout.VerticalAlignment = Enum.VerticalAlignment.Center
     layout.Parent = container
-
     local function makePlate(index)
         local frame = Instance.new("Frame")
         frame.Size = UDim2.fromOffset(W, H)
@@ -362,12 +353,10 @@ local function startStatsGui()
         label.Parent = frame
         return label
     end
-
     local pingLabel = makePlate(1)
     local fpsLabel = makePlate(2)
     local timeLabel = makePlate(3)
     local playersLabel = makePlate(4)
-
     local creditFrame = Instance.new("Frame")
     creditFrame.Size = UDim2.fromOffset(W, H)
     creditFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
@@ -387,42 +376,25 @@ local function startStatsGui()
     creditLabel.TextXAlignment = Enum.TextXAlignment.Center
     creditLabel.TextYAlignment = Enum.TextYAlignment.Center
     creditLabel.Parent = creditFrame
-
-    local startTime = tick()
-    local fpsFrames = 0
-    local fpsLast = tick()
-    local fpsValue = 0
-    local accum = 0
-
+    local startTime = tick(); local fpsFrames = 0; local fpsLast = tick(); local fpsValue = 0; local accum = 0
     RunService.RenderStepped:Connect(function()
         fpsFrames = fpsFrames + 1
         local now = tick()
-        if now - fpsLast >= 1 then
-            fpsValue = math.floor(fpsFrames / (now - fpsLast) + 0.5)
-            fpsFrames = 0
-            fpsLast = now
-        end
+        if now - fpsLast >= 1 then fpsValue = math.floor(fpsFrames / (now - fpsLast) + 0.5); fpsFrames = 0; fpsLast = now end
     end)
-
     RunService.Heartbeat:Connect(function(dt)
         accum = accum + dt
         local elapsed = math.floor(tick() - startTime)
-        local h = math.floor(elapsed / 3600)
-        local m = math.floor((elapsed % 3600) / 60)
-        local s = elapsed % 60
+        local h = math.floor(elapsed / 3600); local m = math.floor((elapsed % 3600) / 60); local s = elapsed % 60
         timeLabel.Text = string.format("%d:%02d:%02d", h, m, s)
-
         if accum >= 0.25 then
             accum = 0
             local ping = 0
-            local ok, val = pcall(function()
-                return Stats.Network.ServerStatsItem["Data Ping"]:GetValue()
-            end)
+            local ok, val = pcall(function() return Stats.Network.ServerStatsItem["Data Ping"]:GetValue() end)
             if ok and tonumber(val) then ping = tonumber(val) end
             pingLabel.Text = string.format("%d ms", math.floor(ping + 0.5))
             fpsLabel.Text = string.format("%d FPS", fpsValue)
-            local cur = #Players:GetPlayers()
-            local max = 0
+            local cur = #Players:GetPlayers(); local max = 0
             local okMax, mv = pcall(function() return Players.MaxPlayers end)
             if okMax and type(mv) == "number" and mv > 0 then max = mv end
             playersLabel.Text = max > 0 and string.format("%d/%d plrs", cur, max) or string.format("%d plrs", cur)
