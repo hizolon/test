@@ -197,7 +197,7 @@ lockTitle.TextSize = 14
 lockTitle.ZIndex = 11
 lockTitle.Parent = LockOverlay
 
-local KeyInput = Instance.new("TextBox")
+local KeyInput = Instance.new("")
 KeyInput.Size = UDim2.new(1, -14, 0, 28)
 KeyInput.Position = UDim2.new(0, 7, 0, 50)
 KeyInput.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
