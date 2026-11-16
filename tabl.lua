@@ -1,11 +1,12 @@
--- tabl.lua (Главное окно + загрузка вкладок по твоим ссылкам)
+-- tabl.lua (Окно + Вкладки + Оригинальная система ключа + Загрузка файлов)
 local Players = game:GetService("Players")
-local UserInputService = game:GetService("UserInputService")
-local CoreGui = game:GetService("CoreGui")
+local RunService = game:GetService("RunService")
 local StarterGui = game:GetService("StarterGui")
+local CoreGui = game:GetService("CoreGui")
+local UserInputService = game:GetService("UserInputService")
+local UIS = UserInputService
 local Player = Players.LocalPlayer
 
--- Создаем общую таблицу для общения между файлами
 getgenv().FCS = getgenv().FCS or {}
 local FCS = getgenv().FCS
 FCS.Unlocked = false
@@ -172,17 +173,79 @@ MinimizeButton.MouseButton1Click:Connect(function()
     PagesHolder.Visible = not minimized
 end)
 
--- ===== LOCK =====
-local Lock = Instance.new("Frame")
-Lock.Size = UDim2.new(1,0,1,0); Lock.BackgroundColor3 = Color3.fromRGB(25,25,25); Lock.BackgroundTransparency = 0.05; Lock.ZIndex = 10; Lock.Parent = MainFrame
-local LT = Instance.new("TextLabel"); LT.Size = UDim2.new(1,-14,0,20); LT.Position = UDim2.new(0,7,0,16); LT.BackgroundTransparency = 1; LT.Text = "ВВЕДИТЕ КЛЮЧ"; LT.TextColor3 = Color3.fromRGB(255,0,0); LT.Font = Enum.Font.SourceSansBold; LT.ZIndex = 11; LT.Parent = Lock
-local Key = Instance.new("TextBox"); Key.Size = UDim2.new(1,-14,0,28); Key.Position = UDim2.new(0,7,0,50); Key.BackgroundColor3 = Color3.fromRGB(40,40,40); Key.PlaceholderText = "Ключ..."; Key.ZIndex = 11; Key.Parent = Lock
-local KCorner = Instance.new("UICorner"); KCorner.CornerRadius = UDim.new(0,4); KCorner.Parent = Key
-local UnlockBtn = Instance.new("TextButton"); UnlockBtn.Size = UDim2.new(1,-14,0,30); UnlockBtn.Position = UDim2.new(0,7,0,88); UnlockBtn.BackgroundColor3 = Color3.fromRGB(0,180,0); UnlockBtn.Text = "ПОДТВЕРДИТЬ"; UnlockBtn.TextColor3 = Color3.fromRGB(255,255,255); UnlockBtn.ZIndex = 11; UnlockBtn.Parent = Lock
-local UCorner = Instance.new("UICorner"); UCorner.CornerRadius = UDim.new(0,4); UCorner.Parent = UnlockBtn
+-- =========================================================
+-- ОРИГИНАЛЬНАЯ СИСТЕМА КЛЮЧА
+-- =========================================================
+local LockOverlay = Instance.new("Frame")
+LockOverlay.Name = "LockOverlay"
+LockOverlay.Size = UDim2.new(1, 0, 1, 0)
+LockOverlay.Position = UDim2.new(0, 0, 0, 0)
+LockOverlay.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+LockOverlay.BackgroundTransparency = 0.05
+LockOverlay.BorderSizePixel = 0
+LockOverlay.ZIndex = 10
+LockOverlay.Active = true
+LockOverlay.Parent = MainFrame
+
+local lockTitle = Instance.new("TextLabel")
+lockTitle.Size = UDim2.new(1, -14, 0, 20)
+lockTitle.Position = UDim2.new(0, 7, 0, 16)
+lockTitle.BackgroundTransparency = 1
+lockTitle.Text = "ВВЕДИТЕ КЛЮЧ ДЛЯ ЗАПУСКА"
+lockTitle.TextColor3 = Color3.fromRGB(255, 0, 0)
+lockTitle.Font = Enum.Font.SourceSansBold
+lockTitle.TextSize = 14
+lockTitle.ZIndex = 11
+lockTitle.Parent = LockOverlay
+
+local KeyInput = Instance.new("TextBox")
+KeyInput.Size = UDim2.new(1, -14, 0, 28)
+KeyInput.Position = UDim2.new(0, 7, 0, 50)
+KeyInput.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+KeyInput.BorderSizePixel = 0
+KeyInput.Text = ""
+KeyInput.PlaceholderText = "Введите ключ..."
+KeyInput.PlaceholderColor3 = Color3.fromRGB(150, 150, 150)
+KeyInput.TextColor3 = Color3.fromRGB(255, 255, 255)
+KeyInput.Font = Enum.Font.SourceSans
+KeyInput.TextSize = 13
+KeyInput.ClearTextOnFocus = false
+KeyInput.ZIndex = 11
+KeyInput.Parent = LockOverlay
+
+local kc = Instance.new("UICorner")
+kc.CornerRadius = UDim.new(0, 4)
+kc.Parent = KeyInput
+
+local UnlockButton = Instance.new("TextButton")
+UnlockButton.Size = UDim2.new(1, -14, 0, 30)
+UnlockButton.Position = UDim2.new(0, 7, 0, 88)
+UnlockButton.BackgroundColor3 = Color3.fromRGB(0, 180, 0)
+UnlockButton.BorderSizePixel = 0
+UnlockButton.Text = "ПОДТВЕРДИТЬ"
+UnlockButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+UnlockButton.Font = Enum.Font.SourceSansBold
+UnlockButton.TextSize = 13
+UnlockButton.ZIndex = 11
+UnlockButton.Parent = LockOverlay
+
+local bc = Instance.new("UICorner")
+bc.CornerRadius = UDim.new(0, 4)
+bc.Parent = UnlockButton
+
+local KeyStatus = Instance.new("TextLabel")
+KeyStatus.Size = UDim2.new(1, -14, 0, 18)
+KeyStatus.Position = UDim2.new(0, 7, 0, 126)
+KeyStatus.BackgroundTransparency = 1
+KeyStatus.Text = "Ключ привязан строго к ID пользователя"
+KeyStatus.TextColor3 = Color3.fromRGB(200, 200, 200)
+KeyStatus.Font = Enum.Font.SourceSans
+KeyStatus.TextSize = 11
+KeyStatus.ZIndex = 11
+KeyStatus.Parent = LockOverlay
 
 -- =========================================================
--- ССЫЛКИ НА ТВОИ ФАЙЛЫ
+-- ССЫЛКИ НА ФАЙЛЫ (ТВОИ)
 -- =========================================================
 local files = {
     Home = "https://raw.githubusercontent.com/hizolon/test/refs/heads/main/home.lua",
@@ -200,7 +263,7 @@ local function loadTab(name)
         local success, code = pcall(game.HttpGet, game, url)
         if success and code then
             local func, err = loadstring(code, name)
-            if func then
+            if func then 
                 local ok, err2 = pcall(func)
                 if not ok then warn("[FCS] Ошибка выполнения " .. name .. ": " .. tostring(err2)) end
             else
@@ -212,19 +275,40 @@ local function loadTab(name)
     end)
 end
 
-UnlockBtn.MouseButton1Click:Connect(function()
-    if Key.Text == "ABC" then
+-- =========================================================
+-- ОРИГИНАЛЬНАЯ ЛОГИКА РАЗБЛОКИРОВКИ
+-- =========================================================
+UnlockButton.MouseButton1Click:Connect(function()
+    KeyStatus.Text = "Ключ привязан строго к ID пользователя"
+    KeyStatus.TextColor3 = Color3.fromRGB(200, 200, 200)
+
+    if Player.UserId == 11979107741 and KeyInput.Text == "ABC" then
         FCS.Unlocked = true
-        Key.Visible = false; UnlockBtn.Visible = false; Lock:Destroy()
+        KeyStatus.Text = "Скрипт разблокирован! ;3"
+        KeyStatus.TextColor3 = Color3.fromRGB(0, 255, 0)
+        KeyInput.Visible = false
+        UnlockButton.Visible = false
+        task.wait(0.4)
+        if LockOverlay then LockOverlay:Destroy(); LockOverlay = nil end
+
         MainFrame.Active = true
         showPage("Home")
-        Message("Успешно", "Загрузка вкладок...", 3)
+        Message("Скрипт успешно разблокирован :D", "Нихуя ты молодец", 5)
         
-        -- Загружаем все вкладки
+        -- Загрузка вкладок
         for name, _ in pairs(files) do
             loadTab(name)
         end
     else
-        Message("Ошибка", "Неверный ключ", 3)
+        KeyStatus.Text = "Неверный ключ или нет доступа!"
+        KeyStatus.TextColor3 = Color3.fromRGB(255, 80, 80)
+        Message("КЛЮЧ МОЖНО ПОЛУЧИТЬ ЗДЕСЬ", ".gg/uJxKthGVxU", 5)
+    end
+end)
+
+KeyInput:GetPropertyChangedSignal("Text"):Connect(function()
+    if not FCS.Unlocked then
+        KeyStatus.Text = "Ключ привязан строго к ID пользователя"
+        KeyStatus.TextColor3 = Color3.fromRGB(200, 200, 200)
     end
 end)
