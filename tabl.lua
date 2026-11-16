@@ -9,6 +9,7 @@ local Player = Players.LocalPlayer
 
 getgenv().FCS = getgenv().FCS or {}
 local FCS = getgenv().FCS
+FCS.Unlocked = false
 
 local function getGuiParent()
     local ok, parent = pcall(function() return CoreGui end)
@@ -19,9 +20,8 @@ end
 local function Message(t, x, d) pcall(function() StarterGui:SetCore("SendNotification", {Title=t, Text=x, Duration=d}) end) end
 
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "ID_11979107741"
+ScreenGui.Name = "ID:11979107741"
 ScreenGui.ResetOnSpawn = false
-ScreenGui.IgnoreGuiInset = true
 ScreenGui.Parent = getGuiParent()
 FCS.ScreenGui = ScreenGui
 
