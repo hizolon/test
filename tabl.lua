@@ -1,6 +1,7 @@
--- tabl.lua (Окно + Вкладки + Оригинальная система ключа + Загрузка файлов)
+-- tabl.lua (Окно + Вкладки + Оригинальный Ключ + Stats + Загрузка файлов)
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
+local Stats = game:GetService("Stats")
 local StarterGui = game:GetService("StarterGui")
 local CoreGui = game:GetService("CoreGui")
 local UserInputService = game:GetService("UserInputService")
@@ -174,17 +175,15 @@ MinimizeButton.MouseButton1Click:Connect(function()
 end)
 
 -- =========================================================
--- ОРИГИНАЛЬНАЯ СИСТЕМА КЛЮЧА
+-- СИСТЕМА КЛЮЧА (ОРИГИНАЛ)
 -- =========================================================
 local LockOverlay = Instance.new("Frame")
 LockOverlay.Name = "LockOverlay"
 LockOverlay.Size = UDim2.new(1, 0, 1, 0)
-LockOverlay.Position = UDim2.new(0, 0, 0, 0)
 LockOverlay.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 LockOverlay.BackgroundTransparency = 0.05
 LockOverlay.BorderSizePixel = 0
 LockOverlay.ZIndex = 10
-LockOverlay.Active = true
 LockOverlay.Parent = MainFrame
 
 local lockTitle = Instance.new("TextLabel")
@@ -202,8 +201,6 @@ local KeyInput = Instance.new("TextBox")
 KeyInput.Size = UDim2.new(1, -14, 0, 28)
 KeyInput.Position = UDim2.new(0, 7, 0, 50)
 KeyInput.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-KeyInput.BorderSizePixel = 0
-KeyInput.Text = ""
 KeyInput.PlaceholderText = "Введите ключ..."
 KeyInput.PlaceholderColor3 = Color3.fromRGB(150, 150, 150)
 KeyInput.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -212,26 +209,19 @@ KeyInput.TextSize = 13
 KeyInput.ClearTextOnFocus = false
 KeyInput.ZIndex = 11
 KeyInput.Parent = LockOverlay
-
-local kc = Instance.new("UICorner")
-kc.CornerRadius = UDim.new(0, 4)
-kc.Parent = KeyInput
+local kc = Instance.new("UICorner"); kc.CornerRadius = UDim.new(0, 4); kc.Parent = KeyInput
 
 local UnlockButton = Instance.new("TextButton")
 UnlockButton.Size = UDim2.new(1, -14, 0, 30)
 UnlockButton.Position = UDim2.new(0, 7, 0, 88)
 UnlockButton.BackgroundColor3 = Color3.fromRGB(0, 180, 0)
-UnlockButton.BorderSizePixel = 0
 UnlockButton.Text = "ПОДТВЕРДИТЬ"
 UnlockButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 UnlockButton.Font = Enum.Font.SourceSansBold
 UnlockButton.TextSize = 13
 UnlockButton.ZIndex = 11
 UnlockButton.Parent = LockOverlay
-
-local bc = Instance.new("UICorner")
-bc.CornerRadius = UDim.new(0, 4)
-bc.Parent = UnlockButton
+local bc = Instance.new("UICorner"); bc.CornerRadius = UDim.new(0, 4); bc.Parent = UnlockButton
 
 local KeyStatus = Instance.new("TextLabel")
 KeyStatus.Size = UDim2.new(1, -14, 0, 18)
@@ -245,7 +235,7 @@ KeyStatus.ZIndex = 11
 KeyStatus.Parent = LockOverlay
 
 -- =========================================================
--- ССЫЛКИ НА ФАЙЛЫ (ТВОИ)
+-- ССЫЛКИ НА ТВОИ ФАЙЛЫ
 -- =========================================================
 local files = {
     Home = "https://raw.githubusercontent.com/hizolon/test/refs/heads/main/home.lua",
@@ -263,7 +253,7 @@ local function loadTab(name)
         local success, code = pcall(game.HttpGet, game, url)
         if success and code then
             local func, err = loadstring(code, name)
-            if func then 
+            if func then
                 local ok, err2 = pcall(func)
                 if not ok then warn("[FCS] Ошибка выполнения " .. name .. ": " .. tostring(err2)) end
             else
@@ -276,7 +266,7 @@ local function loadTab(name)
 end
 
 -- =========================================================
--- ОРИГИНАЛЬНАЯ ЛОГИКА РАЗБЛОКИРОВКИ
+-- ЛОГИКА РАЗБЛОКИРОВКИ
 -- =========================================================
 UnlockButton.MouseButton1Click:Connect(function()
     KeyStatus.Text = "Ключ привязан строго к ID пользователя"
@@ -312,3 +302,132 @@ KeyInput:GetPropertyChangedSignal("Text"):Connect(function()
         KeyStatus.TextColor3 = Color3.fromRGB(200, 200, 200)
     end
 end)
+
+-- =========================================================
+-- STATS GUI (СВЕРХУ ЭКРАНА)
+-- =========================================================
+local function startStatsGui()
+    local W, H, SP, Y = 64, 24, 6, 10
+    local guiParent = Player:WaitForChild("PlayerGui", 10)
+    if not guiParent then return end
+
+    local old = guiParent:FindFirstChild("ServerStatsGUI")
+    if old then old:Destroy() end
+
+    local StatsScreenGui = Instance.new("ScreenGui")
+    StatsScreenGui.Name = "ServerStatsGUI"
+    StatsScreenGui.ResetOnSpawn = false
+    StatsScreenGui.IgnoreGuiInset = true
+    StatsScreenGui.DisplayOrder = 999
+    StatsScreenGui.Parent = guiParent
+
+    local COUNT = 5
+    local totalW = COUNT * W + (COUNT - 1) * SP
+
+    local container = Instance.new("Frame")
+    container.Name = "StatsRow"
+    container.Size = UDim2.fromOffset(totalW, H)
+    container.Position = UDim2.new(0.75, 0, 0, Y)
+    container.AnchorPoint = Vector2.new(0.5, 0)
+    container.BackgroundTransparency = 1
+    container.BorderSizePixel = 0
+    container.Parent = StatsScreenGui
+
+    local layout = Instance.new("UIListLayout")
+    layout.FillDirection = Enum.FillDirection.Horizontal
+    layout.SortOrder = Enum.SortOrder.LayoutOrder
+    layout.Padding = UDim.new(0, SP)
+    layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+    layout.VerticalAlignment = Enum.VerticalAlignment.Center
+    layout.Parent = container
+
+    local function makePlate(index)
+        local frame = Instance.new("Frame")
+        frame.Size = UDim2.fromOffset(W, H)
+        frame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+        frame.BackgroundTransparency = 0.5
+        frame.BorderSizePixel = 0
+        frame.LayoutOrder = index
+        frame.Parent = container
+        local corner = Instance.new("UICorner"); corner.CornerRadius = UDim.new(0, 6); corner.Parent = frame
+        local label = Instance.new("TextLabel")
+        label.Size = UDim2.fromScale(1, 1)
+        label.BackgroundTransparency = 1
+        label.Text = "..."
+        label.TextColor3 = Color3.fromRGB(255, 255, 255)
+        label.TextSize = 12
+        label.Font = Enum.Font.SourceSansBold
+        label.TextXAlignment = Enum.TextXAlignment.Center
+        label.TextYAlignment = Enum.TextYAlignment.Center
+        label.Parent = frame
+        return label
+    end
+
+    local pingLabel = makePlate(1)
+    local fpsLabel = makePlate(2)
+    local timeLabel = makePlate(3)
+    local playersLabel = makePlate(4)
+
+    local creditFrame = Instance.new("Frame")
+    creditFrame.Size = UDim2.fromOffset(W, H)
+    creditFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    creditFrame.BackgroundTransparency = 0.5
+    creditFrame.BorderSizePixel = 0
+    creditFrame.LayoutOrder = 5
+    creditFrame.Parent = container
+    local creditCorner = Instance.new("UICorner"); creditCorner.CornerRadius = UDim.new(0, 6); creditCorner.Parent = creditFrame
+    local creditStroke = Instance.new("UIStroke"); creditStroke.Color = Color3.fromRGB(255, 255, 255); creditStroke.Thickness = 1.5; creditStroke.Parent = creditFrame
+    local creditLabel = Instance.new("TextLabel")
+    creditLabel.Size = UDim2.fromScale(1, 1)
+    creditLabel.BackgroundTransparency = 1
+    creditLabel.Text = "By: Flarnux"
+    creditLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    creditLabel.TextSize = 12
+    creditLabel.Font = Enum.Font.SourceSansBold
+    creditLabel.TextXAlignment = Enum.TextXAlignment.Center
+    creditLabel.TextYAlignment = Enum.TextYAlignment.Center
+    creditLabel.Parent = creditFrame
+
+    local startTime = tick()
+    local fpsFrames = 0
+    local fpsLast = tick()
+    local fpsValue = 0
+    local accum = 0
+
+    RunService.RenderStepped:Connect(function()
+        fpsFrames = fpsFrames + 1
+        local now = tick()
+        if now - fpsLast >= 1 then
+            fpsValue = math.floor(fpsFrames / (now - fpsLast) + 0.5)
+            fpsFrames = 0
+            fpsLast = now
+        end
+    end)
+
+    RunService.Heartbeat:Connect(function(dt)
+        accum = accum + dt
+        local elapsed = math.floor(tick() - startTime)
+        local h = math.floor(elapsed / 3600)
+        local m = math.floor((elapsed % 3600) / 60)
+        local s = elapsed % 60
+        timeLabel.Text = string.format("%d:%02d:%02d", h, m, s)
+
+        if accum >= 0.25 then
+            accum = 0
+            local ping = 0
+            local ok, val = pcall(function()
+                return Stats.Network.ServerStatsItem["Data Ping"]:GetValue()
+            end)
+            if ok and tonumber(val) then ping = tonumber(val) end
+            pingLabel.Text = string.format("%d ms", math.floor(ping + 0.5))
+            fpsLabel.Text = string.format("%d FPS", fpsValue)
+            local cur = #Players:GetPlayers()
+            local max = 0
+            local okMax, mv = pcall(function() return Players.MaxPlayers end)
+            if okMax and type(mv) == "number" and mv > 0 then max = mv end
+            playersLabel.Text = max > 0 and string.format("%d/%d plrs", cur, max) or string.format("%d plrs", cur)
+        end
+    end)
+end
+
+startStatsGui()
