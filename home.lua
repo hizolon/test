@@ -1,7 +1,6 @@
 -- home.lua
 local page = getgenv().FCS.pages["Home"]
 if not page then return end
-
 local Players = game:GetService("Players")
 local Player = Players.LocalPlayer
 
@@ -54,6 +53,7 @@ local AvatarImage = Instance.new("ImageLabel")
 AvatarImage.Size = UDim2.new(1, -2, 1, -2)
 AvatarImage.Position = UDim2.new(0, 1, 0, 1)
 AvatarImage.BackgroundTransparency = 1
+AvatarImage.Image = ""
 AvatarImage.ScaleType = Enum.ScaleType.Crop
 AvatarImage.Parent = AvatarFrame
 
@@ -73,7 +73,15 @@ Header.TextXAlignment = Enum.TextXAlignment.Left
 Header.TextYAlignment = Enum.TextYAlignment.Center
 Header.Parent = HeaderRow
 
-AvatarImage.Image = string.format("https://www.roblox.com/headshot-thumbnail/image?userId=%d&width=150&height=150&format=png", Player.UserId)
+local function loadAvatar(userId)
+    local url = string.format(
+        "https://www.roblox.com/headshot-thumbnail/image?userId=%d&width=150&height=150&format=png",
+        userId
+    )
+    AvatarImage.Image = url
+end
+
+loadAvatar(Player.UserId)
 
 local function makeStatRow(order, labelText)
     local row = Instance.new("Frame")
@@ -107,27 +115,31 @@ local function makeStatRow(order, labelText)
     return value
 end
 
-local IdValue = makeStatRow(2, "User ID")
-local PlaceIdValue = makeStatRow(3, "Place ID")
-local DisplayValue = makeStatRow(4, "Display Name")
-local UsernameValue = makeStatRow(5, "Username")
+local IdValue         = makeStatRow(2, "User ID")
+local PlaceIdValue    = makeStatRow(3, "Place ID")
+local DisplayValue    = makeStatRow(4, "Display Name")
+local UsernameValue   = makeStatRow(5, "Username")
 local AccountAgeValue = makeStatRow(6, "Account Age")
-local CreatedValue = makeStatRow(7, "Created")
+local CreatedValue    = makeStatRow(7, "Created")
 
-IdValue.Text = tostring(Player.UserId)
-DisplayValue.Text = Player.DisplayName
+IdValue.Text       = tostring(Player.UserId)
+DisplayValue.Text  = Player.DisplayName
 UsernameValue.Text = "@" .. Player.Name
 
-local ok, id = pcall(function() return game.PlaceId end)
-PlaceIdValue.Text = ok and tostring(id) or "n/a"
+local function updatePlaceId()
+    local ok, id = pcall(function() return game.PlaceId end)
+    PlaceIdValue.Text = ok and tostring(id) or "n/a"
+end
+updatePlaceId()
 
-task.spawn(function()
-    local ok2, created = pcall(function() return Player.AccountAge end)
-    if ok2 and created then
+local function fetchAccountInfo()
+    local ok, created = pcall(function() return Player.AccountAge end)
+    if ok and created then
         local days = created
         local years = math.floor(days / 365)
         local months = math.floor((days % 365) / 30)
         AccountAgeValue.Text = string.format("%d d (%dy %dm)", days, years, months)
+
         local now = os.time()
         local reg = now - days * 86400
         CreatedValue.Text = os.date("%d.%m.%Y", reg)
@@ -135,4 +147,13 @@ task.spawn(function()
         AccountAgeValue.Text = "n/a"
         CreatedValue.Text = "n/a"
     end
+end
+
+task.spawn(fetchAccountInfo)
+
+Player.CharacterAdded:Connect(function()
+    IdValue.Text       = tostring(Player.UserId)
+    DisplayValue.Text  = Player.DisplayName
+    UsernameValue.Text = "@" .. Player.Name
+    updatePlaceId()
 end)
