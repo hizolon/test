@@ -1,15 +1,15 @@
--- main.lua
+-- tabl.lua (Главное окно + загрузка вкладок по твоим ссылкам)
 local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-local StarterGui = game:GetService("StarterGui")
-local CoreGui = game:GetService("CoreGui")
 local UserInputService = game:GetService("UserInputService")
-local UIS = UserInputService
+local CoreGui = game:GetService("CoreGui")
+local StarterGui = game:GetService("StarterGui")
 local Player = Players.LocalPlayer
 
+-- Создаем общую таблицу для общения между файлами
 getgenv().FCS = getgenv().FCS or {}
 local FCS = getgenv().FCS
 FCS.Unlocked = false
+FCS.pages = {}
 
 local function getGuiParent()
     local ok, parent = pcall(function() return CoreGui end)
@@ -19,6 +19,9 @@ end
 
 local function Message(t, x, d) pcall(function() StarterGui:SetCore("SendNotification", {Title=t, Text=x, Duration=d}) end) end
 
+-- =========================================================
+-- ОКНО
+-- =========================================================
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "ID:11979107741"
 ScreenGui.ResetOnSpawn = false
@@ -115,8 +118,7 @@ PagesHolder.BorderSizePixel = 0
 PagesHolder.ZIndex = 2
 PagesHolder.Parent = MainFrame
 
-local pages, tabButtons = {}, {}
-FCS.pages = pages
+local tabButtons = {}
 
 local function registerPage(name)
     local page = Instance.new("Frame")
@@ -127,12 +129,12 @@ local function registerPage(name)
     page.Visible = false
     page.ZIndex = 2
     page.Parent = PagesHolder
-    pages[name] = page
+    FCS.pages[name] = page
     return page
 end
 
 local function showPage(name)
-    for n, p in pairs(pages) do p.Visible = (n == name) end
+    for n, p in pairs(FCS.pages) do p.Visible = (n == name) end
     for n, b in pairs(tabButtons) do b.BackgroundColor3 = (n == name) and Color3.fromRGB(80, 0, 0) or Color3.fromRGB(45, 45, 45) end
 end
 FCS.showPage = showPage
@@ -170,6 +172,7 @@ MinimizeButton.MouseButton1Click:Connect(function()
     PagesHolder.Visible = not minimized
 end)
 
+-- ===== LOCK =====
 local Lock = Instance.new("Frame")
 Lock.Size = UDim2.new(1,0,1,0); Lock.BackgroundColor3 = Color3.fromRGB(25,25,25); Lock.BackgroundTransparency = 0.05; Lock.ZIndex = 10; Lock.Parent = MainFrame
 local LT = Instance.new("TextLabel"); LT.Size = UDim2.new(1,-14,0,20); LT.Position = UDim2.new(0,7,0,16); LT.BackgroundTransparency = 1; LT.Text = "ВВЕДИТЕ КЛЮЧ"; LT.TextColor3 = Color3.fromRGB(255,0,0); LT.Font = Enum.Font.SourceSansBold; LT.ZIndex = 11; LT.Parent = Lock
@@ -178,13 +181,33 @@ local KCorner = Instance.new("UICorner"); KCorner.CornerRadius = UDim.new(0,4); 
 local UnlockBtn = Instance.new("TextButton"); UnlockBtn.Size = UDim2.new(1,-14,0,30); UnlockBtn.Position = UDim2.new(0,7,0,88); UnlockBtn.BackgroundColor3 = Color3.fromRGB(0,180,0); UnlockBtn.Text = "ПОДТВЕРДИТЬ"; UnlockBtn.TextColor3 = Color3.fromRGB(255,255,255); UnlockBtn.ZIndex = 11; UnlockBtn.Parent = Lock
 local UCorner = Instance.new("UICorner"); UCorner.CornerRadius = UDim.new(0,4); UCorner.Parent = UnlockBtn
 
-local BASE = "https://raw.githubusercontent.com/ТВОЙ_НИК/fcs-script/main/"
-local function loadTab(url, name)
+-- =========================================================
+-- ССЫЛКИ НА ТВОИ ФАЙЛЫ
+-- =========================================================
+local files = {
+    Home = "https://raw.githubusercontent.com/hizolon/test/refs/heads/main/home.lua",
+    Movement = "https://raw.githubusercontent.com/hizolon/test/refs/heads/main/movement.lua",
+    PVP = "https://raw.githubusercontent.com/hizolon/test/refs/heads/main/pvp.lua",
+    HP = "https://raw.githubusercontent.com/hizolon/test/refs/heads/main/hp.lua",
+    Telepots = "https://raw.githubusercontent.com/hizolon/test/refs/heads/main/telepots.lua",
+    Settings = "https://raw.githubusercontent.com/hizolon/test/refs/heads/main/settings.lua"
+}
+
+local function loadTab(name)
+    local url = files[name]
+    if not url then return end
     task.spawn(function()
         local success, code = pcall(game.HttpGet, game, url)
         if success and code then
             local func, err = loadstring(code, name)
-            if func then pcall(func) else warn("[FCS] Ошибка компиляции " .. name .. ": " .. tostring(err)) end
+            if func then
+                local ok, err2 = pcall(func)
+                if not ok then warn("[FCS] Ошибка выполнения " .. name .. ": " .. tostring(err2)) end
+            else
+                warn("[FCS] Ошибка компиляции " .. name .. ": " .. tostring(err))
+            end
+        else
+            warn("[FCS] Не удалось скачать " .. name)
         end
     end)
 end
@@ -196,12 +219,11 @@ UnlockBtn.MouseButton1Click:Connect(function()
         MainFrame.Active = true
         showPage("Home")
         Message("Успешно", "Загрузка вкладок...", 3)
-        loadTab(BASE .. "home.lua", "Home")
-        loadTab(BASE .. "movement.lua", "Movement")
-        loadTab(BASE .. "pvp.lua", "PVP")
-        loadTab(BASE .. "hp.lua", "HP")
-        loadTab(BASE .. "telepots.lua", "Telepots")
-        loadTab(BASE .. "settings.lua", "Settings")
+        
+        -- Загружаем все вкладки
+        for name, _ in pairs(files) do
+            loadTab(name)
+        end
     else
         Message("Ошибка", "Неверный ключ", 3)
     end
