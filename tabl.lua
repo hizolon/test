@@ -238,7 +238,7 @@ local KeyStatus = Instance.new("TextLabel")
 KeyStatus.Size = UDim2.new(1, -14, 0, 18)
 KeyStatus.Position = UDim2.new(0, 7, 0, 126)
 KeyStatus.BackgroundTransparency = 1
-KeyStatus.Text = "Ключ для доступа"
+KeyStatus.Text = "Введите ключ для доступа"
 KeyStatus.TextColor3 = Color3.fromRGB(200, 200, 200)
 KeyStatus.Font = Enum.Font.SourceSans
 KeyStatus.TextSize = 11
@@ -300,7 +300,7 @@ UnlockButton.MouseButton1Click:Connect(function()
     else
         KeyStatus.Text = "Неверный ключ!"
         KeyStatus.TextColor3 = Color3.fromRGB(255, 80, 80)
-        Message("НЕВЕРНЫЙ КЛЮЧ", "Попробуй ABC", 5)
+        Message("НЕВЕРНЫЙ КЛЮЧ", ">_<", 5)
     end
 end)
 
