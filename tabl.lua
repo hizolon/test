@@ -161,8 +161,11 @@ local function makeTab(name, order)
     tabButtons[name] = btn
 end
 
-registerPage("Home"); registerPage("Movement"); registerPage("PVP"); registerPage("Visual"); registerPage("HP"); registerPage("Telepots"); registerPage("Settings")
+registerPage("Home"); registerPage("Movement"); registerPage("PVP"); registerPage("Hitbox"); registerPage("HP"); registerPage("Telepots"); registerPage("Settings")
 makeTab("Home", 1); makeTab("Movement", 2); makeTab("PVP", 3); makeTab("Hitbox", 4); makeTab("HP", 5); makeTab("Telepots", 6); makeTab("Settings", 7)
+
+-- Визуальное переименование вкладки Hitbox → Visuals (ключ остаётся "Hitbox")
+tabButtons["Hitbox"].Text = "Visuals"
 
 local minimized = false
 local function toggleMinimize()
@@ -238,7 +241,7 @@ local KeyStatus = Instance.new("TextLabel")
 KeyStatus.Size = UDim2.new(1, -14, 0, 18)
 KeyStatus.Position = UDim2.new(0, 7, 0, 126)
 KeyStatus.BackgroundTransparency = 1
-KeyStatus.Text = "Введите ключ для доступа"
+KeyStatus.Text = "Ключ для доступа"
 KeyStatus.TextColor3 = Color3.fromRGB(200, 200, 200)
 KeyStatus.Font = Enum.Font.SourceSans
 KeyStatus.TextSize = 11
@@ -300,7 +303,7 @@ UnlockButton.MouseButton1Click:Connect(function()
     else
         KeyStatus.Text = "Неверный ключ!"
         KeyStatus.TextColor3 = Color3.fromRGB(255, 80, 80)
-        Message("НЕВЕРНЫЙ КЛЮЧ", ">_<", 5)
+        Message("НЕВЕРНЫЙ КЛЮЧ", "Попробуй ABC", 5)
     end
 end)
 
