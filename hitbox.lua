@@ -1,16 +1,11 @@
--- hitbox.lua (встраивается в FCS.pages["Hitbox"])
+-- hitbox.lua
 local page = getgenv().FCS and getgenv().FCS.pages and getgenv().FCS.pages["Hitbox"]
-if not page then
-    warn("[Hitbox] Страница не найдена — запусти через загрузчик")
-    return
-end
-if page:FindFirstChild("HitboxRoot") then
-    return -- уже построено, не дублируем
-end
+if not page then return end
+if page:FindFirstChild("HitboxRoot") then return end
 
 local Players = game:GetService("Players")
-local UIS = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
+local UIS = game:GetService("UserInputService")
 local Workspace = game:GetService("Workspace")
 local Player = Players.LocalPlayer
 local FCS = getgenv().FCS
@@ -30,25 +25,13 @@ if not hasDrawing then
     warn("[Hitbox] Drawing API недоступен — ESP будет отключён")
 end
 
--- ===== Корень страницы =====
+-- ===== Корень страницы (для защиты от дублей) =====
 local Root = Instance.new("Frame")
 Root.Name = "HitboxRoot"
 Root.Size = UDim2.fromScale(1, 1)
 Root.BackgroundTransparency = 1
 Root.BorderSizePixel = 0
 Root.Parent = page
-
-local Scroll = Instance.new("ScrollingFrame")
-Scroll.Name = "HitboxScroll"
-Scroll.Position = UDim2.new(0, 0, 0, 0)
-Scroll.Size = UDim2.new(1, 0, 1, 0)
-Scroll.BackgroundTransparency = 1
-Scroll.BorderSizePixel = 0
-Scroll.ScrollBarThickness = 4
-Scroll.ScrollBarImageColor3 = Color3.fromRGB(255, 80, 80)
-Scroll.CanvasSize = UDim2.new(0, 0, 0, 0)
-Scroll.ScrollingDirection = Enum.ScrollingDirection.Y
-Scroll.Parent = Root
 
 -- ===== Стиль =====
 local SIDE_PADDING = 7
@@ -69,19 +52,19 @@ local function makeToggle(text, y, height, width)
     b.Font = Enum.Font.SourceSansBold
     b.TextSize = 12
     b.TextXAlignment = Enum.TextXAlignment.Left
-    b.Parent = Scroll
+    b.Parent = Root
     local pad = Instance.new("UIPadding"); pad.PaddingLeft = UDim.new(0, 8); pad.Parent = b
     local c = Instance.new("UICorner"); c.CornerRadius = UDim.new(0, 4); c.Parent = b
     return b
 end
 
-local function makeSlider(parent, yPos)
+local function makeSlider(yPos)
     local back = Instance.new("Frame")
     back.Position = UDim2.new(0, SIDE_PADDING, 0, yPos)
     back.Size = UDim2.new(1, -(SIDE_PADDING * 2), 0, 8)
     back.BackgroundColor3 = Color3.fromRGB(55, 55, 55)
     back.BorderSizePixel = 0
-    back.Parent = parent
+    back.Parent = Root
     local bc = Instance.new("UICorner"); bc.CornerRadius = UDim.new(1, 0); bc.Parent = back
     local fill = Instance.new("Frame")
     fill.Size = UDim2.new(0, 0, 1, 0)
@@ -132,7 +115,7 @@ ESPKeyBox.TextColor3 = Color3.fromRGB(255, 255, 255)
 ESPKeyBox.Font = Enum.Font.SourceSansBold
 ESPKeyBox.TextSize = 12
 ESPKeyBox.ClearTextOnFocus = false
-ESPKeyBox.Parent = Scroll
+ESPKeyBox.Parent = Root
 local ESPKeyCorner = Instance.new("UICorner"); ESPKeyCorner.CornerRadius = UDim.new(0, 4); ESPKeyCorner.Parent = ESPKeyBox
 
 local xrayEnabled = false
@@ -163,12 +146,10 @@ XRayKeyBox.TextColor3 = Color3.fromRGB(255, 255, 255)
 XRayKeyBox.Font = Enum.Font.SourceSansBold
 XRayKeyBox.TextSize = 12
 XRayKeyBox.ClearTextOnFocus = false
-XRayKeyBox.Parent = Scroll
+XRayKeyBox.Parent = Root
 local XRayKeyCorner = Instance.new("UICorner"); XRayKeyCorner.CornerRadius = UDim.new(0, 4); XRayKeyCorner.Parent = XRayKeyBox
 
-local XRaySlider = makeSlider(Scroll, XRAY_Y + ROW_H + SPACING)
-
-Scroll.CanvasSize = UDim2.new(0, 0, 0, XRAY_Y + ROW_H + SPACING + 14 + 8)
+local XRaySlider = makeSlider(XRAY_Y + ROW_H + SPACING)
 
 -- ===== X-Ray визуал =====
 local function updateXRayVisuals()
@@ -998,6 +979,12 @@ end)
 task.spawn(function()
     while true do
         task.wait(1)
-        if pingEnabled then refreshPingTags() ]]
+        if pingEnabled then refreshPingTags() end
+        if hitboxPlayersEnabled then refreshPlayerBoxes() end
+        if hitboxNpcEnabled then refreshNpcBoxes() end
+        if hitboxObjectEnabled then
+            scanForMissing()
+            cleanupFarObjects()
+        end
     end
 end)
