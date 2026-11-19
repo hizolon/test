@@ -25,7 +25,7 @@ local function Message(t, x, d) pcall(function() StarterGui:SetCore("SendNotific
 -- ОКНО
 -- =========================================================
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "ID:11979107741"
+ScreenGui.Name = "ID:???????"
 ScreenGui.ResetOnSpawn = false
 ScreenGui.Parent = getGuiParent()
 FCS.ScreenGui = ScreenGui
@@ -54,7 +54,7 @@ local TitleBarCorner = Instance.new("UICorner"); TitleBarCorner.CornerRadius = U
 local Title = Instance.new("TextLabel")
 Title.Size = UDim2.new(1, -26, 1, 0)
 Title.BackgroundTransparency = 1
-Title.Text = "ID:11979107741 | FCS | Game: TSB"
+Title.Text = "FCS | commit a3f9c2e | Game: TSB"
 Title.TextColor3 = Color3.fromRGB(255, 0, 0)
 Title.Font = Enum.Font.SourceSansBold
 Title.TextSize = 11
