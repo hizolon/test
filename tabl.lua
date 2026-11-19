@@ -165,13 +165,22 @@ registerPage("Home"); registerPage("Movement"); registerPage("PVP"); registerPag
 makeTab("Home", 1); makeTab("Movement", 2); makeTab("PVP", 3); makeTab("Hitbox", 4); makeTab("HP", 5); makeTab("Telepots", 6); makeTab("Settings", 7)
 
 local minimized = false
-MinimizeButton.MouseButton1Click:Connect(function()
+local function toggleMinimize()
     if not FCS.Unlocked then return end
     minimized = not minimized
     MainFrame.Size = UDim2.fromOffset(315, minimized and 21 or 286)
     MinimizeButton.Text = minimized and "+" or "-"
     Sidebar.Visible = not minimized
     PagesHolder.Visible = not minimized
+end
+
+MinimizeButton.MouseButton1Click:Connect(toggleMinimize)
+
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+    if input.KeyCode == Enum.KeyCode.CapsLock then
+        toggleMinimize()
+    end
 end)
 
 -- =========================================================
@@ -202,6 +211,7 @@ local KeyInput = Instance.new("TextBox")
 KeyInput.Size = UDim2.new(1, -14, 0, 28)
 KeyInput.Position = UDim2.new(0, 7, 0, 50)
 KeyInput.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+KeyInput.Text = ""
 KeyInput.PlaceholderText = "Введите ключ..."
 KeyInput.PlaceholderColor3 = Color3.fromRGB(150, 150, 150)
 KeyInput.TextColor3 = Color3.fromRGB(255, 255, 255)
