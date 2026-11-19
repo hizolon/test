@@ -84,11 +84,11 @@ local function makeSlider(yPos)
 end
 
 -- ===== Кнопки =====
-local HitboxPlayerBtn  = makeToggle("Hitbox player", 28, 28)
-local HitboxNpcBtn     = makeToggle("Hitbox NPC", 56 + SPACING, 28)
-local HitboxObjectBtn  = makeToggle("Hitbox object", 92 + SPACING, 28)
+local HitboxPlayerBtn  = makeToggle("Hitbox player", 6, 28)
+local HitboxNpcBtn     = makeToggle("Hitbox NPC", 6 + 28 + SPACING, 28)
+local HitboxObjectBtn  = makeToggle("Hitbox object", 6 + 2 * (28 + SPACING), 28)
 
-local PING_Y = 128 + SPACING
+local PING_Y = 6 + 3 * (28 + SPACING)
 local DevicePingBtn = makeToggle("Ping tag", PING_Y, 28)
 
 local ESP_Y = PING_Y + 28 + SPACING
