@@ -54,7 +54,7 @@ local TitleBarCorner = Instance.new("UICorner"); TitleBarCorner.CornerRadius = U
 local Title = Instance.new("TextLabel")
 Title.Size = UDim2.new(1, -26, 1, 0)
 Title.BackgroundTransparency = 1
-Title.Text = "FCS | commit a2f9c5e | Game: TSB"
+Title.Text = "FCS | commit a2f9c5e | Game: TSB               .gg/uJxKthGVxU"
 Title.TextColor3 = Color3.fromRGB(255, 0, 0)
 Title.Font = Enum.Font.SourceSansBold
 Title.TextSize = 11
