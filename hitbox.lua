@@ -1,15 +1,21 @@
--- =========================================================
--- Visuals Window | Hitbox Player | Hitbox NPC | Hitbox Object | Ping | ESP | X-Ray
--- =========================================================
+-- hitbox.lua (встраивается в FCS.pages["Hitbox"])
+local page = getgenv().FCS and getgenv().FCS.pages and getgenv().FCS.pages["Hitbox"]
+if not page then
+    warn("[Hitbox] Страница не найдена — запусти через загрузчик")
+    return
+end
+if page:FindFirstChild("HitboxRoot") then
+    return -- уже построено, не дублируем
+end
+
 local Players = game:GetService("Players")
-local CoreGui = game:GetService("CoreGui")
 local UIS = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
-local HttpService = game:GetService("HttpService")
 local Player = Players.LocalPlayer
+local FCS = getgenv().FCS
 
--- ===== Камера (лениво) =====
+-- ===== Камера =====
 local Camera
 repeat task.wait() until Workspace.CurrentCamera
 Camera = Workspace.CurrentCamera
@@ -21,113 +27,35 @@ end)
 local Drawing = Drawing
 local hasDrawing = (Drawing ~= nil and Drawing.new ~= nil)
 if not hasDrawing then
-    warn("[Visuals] Drawing API недоступен — ESP будет отключён")
+    warn("[Hitbox] Drawing API недоступен — ESP будет отключён")
 end
 
-local function getGuiParent()
-    local ok, parent = pcall(function() return CoreGui end)
-    if ok and parent then return parent end
-    return Player:WaitForChild("PlayerGui")
-end
+-- ===== Корень страницы =====
+local Root = Instance.new("Frame")
+Root.Name = "HitboxRoot"
+Root.Size = UDim2.fromScale(1, 1)
+Root.BackgroundTransparency = 1
+Root.BorderSizePixel = 0
+Root.Parent = page
 
-local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "VisualsWindow_11915758727"
-ScreenGui.ResetOnSpawn = false
-ScreenGui.Parent = getGuiParent()
+local Scroll = Instance.new("ScrollingFrame")
+Scroll.Name = "HitboxScroll"
+Scroll.Position = UDim2.new(0, 0, 0, 0)
+Scroll.Size = UDim2.new(1, 0, 1, 0)
+Scroll.BackgroundTransparency = 1
+Scroll.BorderSizePixel = 0
+Scroll.ScrollBarThickness = 4
+Scroll.ScrollBarImageColor3 = Color3.fromRGB(255, 80, 80)
+Scroll.CanvasSize = UDim2.new(0, 0, 0, 0)
+Scroll.ScrollingDirection = Enum.ScrollingDirection.Y
+Scroll.Parent = Root
 
--- ===== Окно (высота как в исходнике) =====
-local MainFrame = Instance.new("Frame")
-MainFrame.Size = UDim2.new(0, 210, 0, 286)
-MainFrame.Position = UDim2.new(0.5, 130, 0.5, -143)
-MainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-MainFrame.BorderSizePixel = 0
-MainFrame.Active = true
-MainFrame.Parent = ScreenGui
-
-local MainStroke = Instance.new("UIStroke")
-MainStroke.Color = Color3.fromRGB(255, 0, 0)
-MainStroke.Thickness = 1.2
-MainStroke.Parent = MainFrame
-
-local TitleBar = Instance.new("Frame")
-TitleBar.Size = UDim2.new(1, 0, 0, 21)
-TitleBar.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-TitleBar.BorderSizePixel = 0
-TitleBar.Parent = MainFrame
-local TitleCorner = Instance.new("UICorner")
-TitleCorner.CornerRadius = UDim.new(0, 4)
-TitleCorner.Parent = TitleBar
-
-local Title = Instance.new("TextLabel")
-Title.Size = UDim2.new(1, -26, 1, 0)
-Title.BackgroundTransparency = 1
-Title.Text = "ID:11915758727 | by: Flarnux | Gm: TSB"
-Title.TextColor3 = Color3.fromRGB(255, 0, 0)
-Title.Font = Enum.Font.SourceSansBold
-Title.TextSize = 11
-Title.TextXAlignment = Enum.TextXAlignment.Left
-Title.Position = UDim2.new(0, 7, 0, 0)
-Title.Parent = TitleBar
-
-local MinBtn = Instance.new("TextButton")
-MinBtn.Position = UDim2.new(1, -21, 0, 0)
-MinBtn.Size = UDim2.fromOffset(21, 21)
-MinBtn.BackgroundColor3 = Color3.fromRGB(55, 55, 55)
-MinBtn.BorderSizePixel = 0
-MinBtn.Text = "-"
-MinBtn.TextColor3 = Color3.new(1, 1, 1)
-MinBtn.Font = Enum.Font.SourceSansBold
-MinBtn.TextSize = 15
-MinBtn.Parent = TitleBar
-local MinCorner = Instance.new("UICorner")
-MinCorner.CornerRadius = UDim.new(0, 4)
-MinCorner.Parent = MinBtn
-
-local FULL_HEIGHT = 286
-local minimized = false
-MinBtn.MouseButton1Click:Connect(function()
-    minimized = not minimized
-    MainFrame.Size = UDim2.fromOffset(210, minimized and 21 or FULL_HEIGHT)
-    MinBtn.Text = minimized and "+" or "-"
-    for _, child in ipairs(MainFrame:GetChildren()) do
-        if child:IsA("GuiObject") and child ~= TitleBar then
-            child.Visible = not minimized
-        end
-    end
-end)
-
--- ===== Перетаскивание =====
-local dragging = false
-local dragStart, startPos
-TitleBar.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-        dragging = true
-        dragStart = input.Position
-        startPos = MainFrame.Position
-    end
-end)
-UIS.InputChanged:Connect(function(input)
-    if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-        local delta = input.Position - dragStart
-        MainFrame.Position = UDim2.new(
-            startPos.X.Scale, startPos.X.Offset + delta.X,
-            startPos.Y.Scale, startPos.Y.Offset + delta.Y
-        )
-    end
-end)
-UIS.InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-        dragging = false
-    end
-end)
-
--- ===== Стиль-хелперы =====
+-- ===== Стиль =====
 local SIDE_PADDING = 7
 local GAP = 6
 local VALUE_WIDTH = 55
 local ROW_H = 24
-local SLIDER_OFF = 32
-local SPACING = 8          -- единый отступ между всеми кнопками/ползунком
+local SPACING = 8
 local XRAY_MIN, XRAY_MAX = 0, 100
 
 local function makeToggle(text, y, height, width)
@@ -141,9 +69,9 @@ local function makeToggle(text, y, height, width)
     b.Font = Enum.Font.SourceSansBold
     b.TextSize = 12
     b.TextXAlignment = Enum.TextXAlignment.Left
-    b.Parent = MainFrame
+    b.Parent = Scroll
     local pad = Instance.new("UIPadding"); pad.PaddingLeft = UDim.new(0, 8); pad.Parent = b
-    local bc = Instance.new("UICorner"); bc.CornerRadius = UDim.new(0, 4); bc.Parent = b
+    local c = Instance.new("UICorner"); c.CornerRadius = UDim.new(0, 4); c.Parent = b
     return b
 end
 
@@ -172,20 +100,14 @@ local function makeSlider(parent, yPos)
     return { Back = back, Fill = fill, Knob = knob }
 end
 
--- ===== Кнопки hitbox =====
-local HitboxPlayerBtn  = makeToggle("Hitbox player", 28, 28)                  -- низ 56
-local HitboxNpcBtn     = makeToggle("Hitbox NPC", 56 + SPACING, 28)           -- 64, низ 92
-local HitboxObjectBtn  = makeToggle("Hitbox object", 92 + SPACING, 28)        -- 100, низ 128
+-- ===== Кнопки =====
+local HitboxPlayerBtn  = makeToggle("Hitbox player", 28, 28)
+local HitboxNpcBtn     = makeToggle("Hitbox NPC", 56 + SPACING, 28)
+local HitboxObjectBtn  = makeToggle("Hitbox object", 92 + SPACING, 28)
 
--- =========================================================
--- Ping tag — Y = 136
--- =========================================================
 local PING_Y = 128 + SPACING
-local DevicePingBtn = makeToggle("Ping tag", PING_Y, 28)                      -- низ 164
+local DevicePingBtn = makeToggle("Ping tag", PING_Y, 28)
 
--- =========================================================
--- ESP — Y = 172 (никнейм = DisplayName)
--- =========================================================
 local ESP_Y = PING_Y + 28 + SPACING
 local espEnabled = false
 local espHotkey = Enum.KeyCode.E
@@ -210,12 +132,9 @@ ESPKeyBox.TextColor3 = Color3.fromRGB(255, 255, 255)
 ESPKeyBox.Font = Enum.Font.SourceSansBold
 ESPKeyBox.TextSize = 12
 ESPKeyBox.ClearTextOnFocus = false
-ESPKeyBox.Parent = MainFrame
+ESPKeyBox.Parent = Scroll
 local ESPKeyCorner = Instance.new("UICorner"); ESPKeyCorner.CornerRadius = UDim.new(0, 4); ESPKeyCorner.Parent = ESPKeyBox
 
--- =========================================================
--- X-Ray — Y = 204
--- =========================================================
 local xrayEnabled = false
 local xrayOriginals = {}
 local xrayConn = nil
@@ -244,12 +163,14 @@ XRayKeyBox.TextColor3 = Color3.fromRGB(255, 255, 255)
 XRayKeyBox.Font = Enum.Font.SourceSansBold
 XRayKeyBox.TextSize = 12
 XRayKeyBox.ClearTextOnFocus = false
-XRayKeyBox.Parent = MainFrame
+XRayKeyBox.Parent = Scroll
 local XRayKeyCorner = Instance.new("UICorner"); XRayKeyCorner.CornerRadius = UDim.new(0, 4); XRayKeyCorner.Parent = XRayKeyBox
 
--- слайдер X-Ray — ровно 8 px под кнопкой X-Ray
-local XRaySlider = makeSlider(MainFrame, XRAY_Y + ROW_H + SPACING)   -- 236
+local XRaySlider = makeSlider(Scroll, XRAY_Y + ROW_H + SPACING)
 
+Scroll.CanvasSize = UDim2.new(0, 0, 0, XRAY_Y + ROW_H + SPACING + 14 + 8)
+
+-- ===== X-Ray визуал =====
 local function updateXRayVisuals()
     local a = math.clamp((xrayTransparencyPct - XRAY_MIN) / (XRAY_MAX - XRAY_MIN), 0, 1)
     XRaySlider.Fill.Size = UDim2.new(a, 0, 1, 0)
@@ -273,16 +194,14 @@ local function setXRayFromX(slider, mouseX)
     if xrayEnabled then applyXrayTransparency() end
 end
 
--- ===== Утилита: контур куба =====
+-- ===== Контур куба =====
 local function makeEdges(size, color, transparency)
     local folder = Instance.new("Folder")
     folder.Name = "HitboxEdges"
     folder.Parent = Workspace
-
     local t = 0.08
     local sx, sy, sz = size.X, size.Y, size.Z
     local edges = {}
-
     local function addEdge(localCF, sz3)
         local p = Instance.new("Part")
         p.Anchored = true
@@ -298,7 +217,6 @@ local function makeEdges(size, color, transparency)
         p.Parent = folder
         table.insert(edges, { part = p, offset = localCF })
     end
-
     for _, x in ipairs({-sx/2, sx/2}) do
         for _, z in ipairs({-sz/2, sz/2}) do
             addEdge(CFrame.new(x, 0, z), Vector3.new(t, sy, t))
@@ -314,7 +232,6 @@ local function makeEdges(size, color, transparency)
             addEdge(CFrame.new(x, y, 0), Vector3.new(t, t, sz))
         end
     end
-
     return folder, edges
 end
 
@@ -324,9 +241,7 @@ local function updateEdges(edges, baseCF)
     end
 end
 
--- =========================================================
--- 1) HITBOX PLAYER
--- =========================================================
+-- ===== HITBOX PLAYER =====
 local hitboxPlayersEnabled = false
 local playerBoxes = {}
 
@@ -392,9 +307,7 @@ local function updatePlayerBoxes()
     end
 end
 
--- =========================================================
--- 2) HITBOX NPC
--- =========================================================
+-- ===== HITBOX NPC =====
 local hitboxNpcEnabled = false
 local npcBoxes = {}
 
@@ -465,13 +378,10 @@ local function updateNpcBoxes()
     end
 end
 
--- =========================================================
--- 3) HITBOX OBJECT
--- =========================================================
+-- ===== HITBOX OBJECT =====
 local hitboxObjectEnabled = false
 local objectBoxes = {}
 local objectConn = nil
-
 local OBJECT_RADIUS = 250
 local OBJECT_RADIUS_SQ = OBJECT_RADIUS * OBJECT_RADIUS
 local OBJECT_RADIUS_CLEAN_SQ = (OBJECT_RADIUS * 1.5) * (OBJECT_RADIUS * 1.5)
@@ -480,18 +390,14 @@ local MAX_ACTIVE_OBJECTS = 400
 
 local function isPlayerCharacterPart(inst)
     for _, plr in ipairs(Players:GetPlayers()) do
-        if plr.Character and inst:IsDescendantOf(plr.Character) then
-            return true
-        end
+        if plr.Character and inst:IsDescendantOf(plr.Character) then return true end
     end
     return false
 end
 
 local function isNpcPart(inst)
     local model = inst:FindFirstAncestorOfClass("Model")
-    if model and model:FindFirstChildOfClass("Humanoid") then
-        return true
-    end
+    if model and model:FindFirstChildOfClass("Humanoid") then return true end
     return false
 end
 
@@ -636,14 +542,10 @@ local function stopObjectHitbox()
     queuedSet = {}
 end
 
--- =========================================================
--- 4) X-RAY
--- =========================================================
+-- ===== X-RAY =====
 local function isAnyPlayerCharacter(inst)
     for _, plr in ipairs(Players:GetPlayers()) do
-        if plr.Character and inst:IsDescendantOf(plr.Character) then
-            return true
-        end
+        if plr.Character and inst:IsDescendantOf(plr.Character) then return true end
     end
     return false
 end
@@ -677,9 +579,7 @@ local function startXray()
     end)
 end
 
--- =========================================================
--- 5) PING TAG
--- =========================================================
+-- ===== PING TAG =====
 local pingEnabled = false
 local MAX_DISTANCE = 200
 local pingTags = {}
@@ -705,7 +605,6 @@ local function createPingTag(plr)
     if not char then return nil end
     local head = char:FindFirstChild("Head") or char:FindFirstChild("HumanoidRootPart")
     if not head then return nil end
-
     local billboard = Instance.new("BillboardGui")
     billboard.Name = "PingTag"
     billboard.Size = UDim2.new(0, 90, 0, 18)
@@ -714,7 +613,6 @@ local function createPingTag(plr)
     billboard.MaxDistance = MAX_DISTANCE
     billboard.Adornee = head
     billboard.Parent = head
-
     local infoLabel = Instance.new("TextLabel")
     infoLabel.Size = UDim2.new(1, 0, 1, 0)
     infoLabel.BackgroundTransparency = 1
@@ -724,7 +622,6 @@ local function createPingTag(plr)
     infoLabel.Font = Enum.Font.SourceSansBold
     infoLabel.TextSize = 13
     infoLabel.Parent = billboard
-
     return { billboard = billboard, infoLabel = infoLabel, head = head, plr = plr }
 end
 
@@ -795,21 +692,16 @@ local function stopPing()
     clearPingTags()
 end
 
--- =========================================================
--- 6) ESP (никнейм = DisplayName)
--- =========================================================
+-- ===== ESP =====
 local espBoxes = {}
 local espTracers = {}
 local espNameTags = {}
 local espDistanceTags = {}
-local espHealthBars = {}
 local espPlayerAddedConn = nil
 local espPlayerConns = {}
 
 local function getDisplayName(plr)
-    if plr.DisplayName and plr.DisplayName ~= "" then
-        return plr.DisplayName
-    end
+    if plr.DisplayName and plr.DisplayName ~= "" then return plr.DisplayName end
     return plr.Name
 end
 
@@ -823,97 +715,49 @@ local function espCreateText(size)
     return text
 end
 
-local function espCreateBarPair()
-    if not hasDrawing then return nil end
-    local outline = Drawing.new("Square")
-    outline.Thickness = 1
-    outline.Filled = true
-    outline.Visible = false
-    outline.Color = Color3.fromRGB(0, 0, 0)
-
-    local bar = Drawing.new("Square")
-    bar.Thickness = 1
-    bar.Filled = true
-    bar.Visible = false
-    bar.Color = Color3.fromRGB(0, 255, 0)
-    return { Outline = outline, Bar = bar }
-end
-
 local function espCreate(character, plr)
     if not hasDrawing then return end
     if not character or espBoxes[character] then return end
     if plr == Player then return end
-
     local hrp = character:FindFirstChild("HumanoidRootPart")
     local head = character:FindFirstChild("Head")
     local humanoid = character:FindFirstChild("Humanoid")
     if not hrp or not head then return end
-
     local box = Drawing.new("Square")
-    box.Visible = false
-    box.Color = Color3.fromRGB(255, 255, 255)
-    box.Filled = false
-    box.Transparency = 1
-    box.Thickness = 1
-
+    box.Visible = false; box.Color = Color3.fromRGB(255, 255, 255); box.Filled = false; box.Transparency = 1; box.Thickness = 1
     local line = Drawing.new("Line")
-    line.Visible = false
-    line.Color = Color3.fromRGB(255, 255, 255)
-    line.Thickness = 1
-    line.Transparency = 1
-
+    line.Visible = false; line.Color = Color3.fromRGB(255, 255, 255); line.Thickness = 1; line.Transparency = 1
     local nameTag = espCreateText(11)
     local distTag = espCreateText(11)
-
-    if not espHealthBars[plr] then
-        espHealthBars[plr] = espCreateBarPair()
-    end
-
     local conn = RunService.RenderStepped:Connect(function()
         if not espEnabled then
             box.Visible = false; line.Visible = false
             if nameTag then nameTag.Visible = false end
             if distTag then distTag.Visible = false end
-            if espHealthBars[plr] then
-                espHealthBars[plr].Outline.Visible = false
-                espHealthBars[plr].Bar.Visible = false
-            end
             return
         end
-
         hrp = character:FindFirstChild("HumanoidRootPart")
         head = character:FindFirstChild("Head")
         humanoid = character:FindFirstChild("Humanoid")
         if not hrp or not head or not humanoid then return end
         if not Camera then return end
-
         local pos, visible = Camera:WorldToViewportPoint(hrp.Position)
         local headPos = Camera:WorldToViewportPoint(head.Position + Vector3.new(0, 0.3, 0))
         local legPos = Camera:WorldToViewportPoint(hrp.Position - Vector3.new(0, 2.5, 0))
         local distance = (Camera.CFrame.Position - hrp.Position).Magnitude
-
         if visible and distance <= 1000 then
             local scale = 1 / (pos.Z * math.tan(math.rad(Camera.FieldOfView * 0.5)) * 2) * 100
             local width, height = math.floor(40 * scale), math.floor(62 * scale)
             local position = Vector2.new(pos.X - width / 2, pos.Y - height / 2)
-
-            box.Size = Vector2.new(width, height)
-            box.Position = position
-            box.Color = Color3.fromRGB(255, 255, 255)
-            box.Visible = true
-
+            box.Size = Vector2.new(width, height); box.Position = position; box.Visible = true
             line.From = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y - 50)
-            line.To = Vector2.new(pos.X, pos.Y)
-            line.Color = Color3.fromRGB(255, 255, 255)
-            line.Visible = true
-
+            line.To = Vector2.new(pos.X, pos.Y); line.Visible = true
             if nameTag then
                 nameTag.Position = Vector2.new(headPos.X, headPos.Y - 20)
-                nameTag.Text = getDisplayName(plr)   -- ← НИКНЕЙМ
+                nameTag.Text = getDisplayName(plr)
                 nameTag.Color = Color3.fromRGB(255, 255, 255)
                 nameTag.Visible = true
             end
-
             if distTag then
                 if Player.Character and Player.Character:FindFirstChild("HumanoidRootPart") then
                     local dist = math.floor((hrp.Position - Player.Character.HumanoidRootPart.Position).Magnitude)
@@ -925,45 +769,12 @@ local function espCreate(character, plr)
                     distTag.Visible = false
                 end
             end
-
-            local pair = espHealthBars[plr]
-            if pair then
-                local outline = pair.Outline
-                local bar = pair.Bar
-                local barHeight = height * 0.95
-                local barWidth = 2
-                local barXPos = position.X - barWidth - 5
-                local barYPos = position.Y + (height - barHeight) / 2
-                local hpPercent = humanoid.Health / humanoid.MaxHealth
-                local filledHeight = barHeight * hpPercent
-
-                outline.Size = Vector2.new(barWidth + 2, barHeight + 2)
-                outline.Position = Vector2.new(barXPos - 1, barYPos - 1)
-                outline.Visible = true
-
-                bar.Size = Vector2.new(barWidth, filledHeight)
-                bar.Position = Vector2.new(barXPos, barYPos + (barHeight - filledHeight))
-
-                if humanoid.Health <= 20 then
-                    bar.Color = Color3.fromRGB(255, 0, 0)
-                elseif humanoid.Health <= 65 then
-                    bar.Color = Color3.fromRGB(255, 255, 0)
-                else
-                    bar.Color = Color3.fromRGB(0, 255, 0)
-                end
-                bar.Visible = true
-            end
         else
             box.Visible = false; line.Visible = false
             if nameTag then nameTag.Visible = false end
             if distTag then distTag.Visible = false end
-            if espHealthBars[plr] then
-                espHealthBars[plr].Outline.Visible = false
-                espHealthBars[plr].Bar.Visible = false
-            end
         end
     end)
-
     espBoxes[character] = { Box = box, Connection = conn }
     espTracers[character] = { Line = line }
     if nameTag then espNameTags[plr] = nameTag end
@@ -980,24 +791,14 @@ local function espRemove(character, plr)
         if espTracers[character].Line then espTracers[character].Line:Remove() end
         espTracers[character] = nil
     end
-    if espNameTags[plr] then
-        espNameTags[plr]:Remove(); espNameTags[plr] = nil
-    end
-    if espDistanceTags[plr] then
-        espDistanceTags[plr]:Remove(); espDistanceTags[plr] = nil
-    end
-    if espHealthBars[plr] then
-        if espHealthBars[plr].Outline then espHealthBars[plr].Outline:Remove() end
-        if espHealthBars[plr].Bar then espHealthBars[plr].Bar:Remove() end
-        espHealthBars[plr] = nil
-    end
+    if espNameTags[plr] then espNameTags[plr]:Remove(); espNameTags[plr] = nil end
+    if espDistanceTags[plr] then espDistanceTags[plr]:Remove(); espDistanceTags[plr] = nil end
 end
 
 local function espSetupPlayer(plr)
     if plr == Player then return end
     if espPlayerConns[plr] then return end
     espPlayerConns[plr] = true
-
     plr.CharacterAdded:Connect(function(char)
         espRemove(char, plr)
         task.wait(0.1)
@@ -1006,20 +807,15 @@ local function espSetupPlayer(plr)
         char:WaitForChild("Humanoid", 5)
         espCreate(char, plr)
     end)
-    plr.CharacterRemoving:Connect(function(char)
-        espRemove(char, plr)
-    end)
-    if plr.Character
-        and plr.Character:FindFirstChild("HumanoidRootPart")
-        and plr.Character:FindFirstChild("Head")
-        and plr.Character:FindFirstChild("Humanoid") then
+    plr.CharacterRemoving:Connect(function(char) espRemove(char, plr) end)
+    if plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") and plr.Character:FindFirstChild("Head") and plr.Character:FindFirstChild("Humanoid") then
         espCreate(plr.Character, plr)
     end
 end
 
 local function startESP()
     if not hasDrawing then
-        warn("[Visuals] ESP недоступен: нет Drawing API")
+        warn("[Hitbox] ESP недоступен: нет Drawing API")
         return
     end
     for _, plr in ipairs(Players:GetPlayers()) do
@@ -1041,18 +837,11 @@ local function stopESP()
     end
     for plr, tag in pairs(espNameTags) do tag:Remove() end
     for plr, tag in pairs(espDistanceTags) do tag:Remove() end
-    for plr, pair in pairs(espHealthBars) do
-        if pair.Outline then pair.Outline:Remove() end
-        if pair.Bar then pair.Bar:Remove() end
-    end
-    espBoxes = {}; espTracers = {}; espNameTags = {}
-    espDistanceTags = {}; espHealthBars = {}
+    espBoxes = {}; espTracers = {}; espNameTags = {}; espDistanceTags = {}
     espPlayerConns = {}
 end
 
--- =========================================================
--- 7) ПЕРЕКЛЮЧАТЕЛИ
--- =========================================================
+-- ===== ПЕРЕКЛЮЧАТЕЛИ =====
 HitboxPlayerBtn.MouseButton1Click:Connect(function()
     hitboxPlayersEnabled = not hitboxPlayersEnabled
     HitboxPlayerBtn.Text = "Hitbox player: " .. (hitboxPlayersEnabled and "ON" or "OFF")
@@ -1110,9 +899,7 @@ UIS.InputBegan:Connect(function(input, gameProcessed)
     end
 end)
 
--- =========================================================
--- 8) ХОТКЕИ
--- =========================================================
+-- ===== ХОТКЕИ =====
 local function normalizeKey(s)
     s = string.upper(s)
     s = string.gsub(s, "[^A-Z0-9]", "")
@@ -1156,15 +943,12 @@ UIS.InputBegan:Connect(function(input, gameProcessed)
     end
 end)
 
--- =========================================================
--- 9) СЛАЙДЕР X-RAY
--- =========================================================
+-- ===== СЛАЙДЕР X-RAY =====
 local draggingXRaySlider = false
 
 XRaySlider.Back.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
         draggingXRaySlider = true
-        dragging = false
         setXRayFromX(XRaySlider, input.Position.X)
     end
 end)
@@ -1183,9 +967,7 @@ end)
 
 updateXRayVisuals()
 
--- =========================================================
--- 10) ФОНОВЫЕ ОБНОВЛЕНИЯ
--- =========================================================
+-- ===== ФОНОВЫЕ ОБНОВЛЕНИЯ =====
 Players.PlayerAdded:Connect(function(plr)
     if pingEnabled and plr ~= Player then watchPlayerCharacter(plr) end
     if hitboxPlayersEnabled then task.wait(0.5); refreshPlayerBoxes() end
@@ -1216,12 +998,6 @@ end)
 task.spawn(function()
     while true do
         task.wait(1)
-        if pingEnabled then refreshPingTags() end
-        if hitboxPlayersEnabled then refreshPlayerBoxes() end
-        if hitboxNpcEnabled then refreshNpcBoxes() end
-        if hitboxObjectEnabled then
-            scanForMissing()
-            cleanupFarObjects()
-        end
+        if pingEnabled then refreshPingTags() ]]
     end
 end)
