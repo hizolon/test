@@ -161,7 +161,7 @@ local function makeTab(name, order)
     tabButtons[name] = btn
 end
 
-registerPage("Home"); registerPage("Movement"); registerPage("PVP"); registerPage("Hitbox"); registerPage("HP"); registerPage("Telepots"); registerPage("Settings")
+registerPage("Home"); registerPage("Movement"); registerPage("PVP"); registerPage("Visual"); registerPage("HP"); registerPage("Telepots"); registerPage("Settings")
 makeTab("Home", 1); makeTab("Movement", 2); makeTab("PVP", 3); makeTab("Hitbox", 4); makeTab("HP", 5); makeTab("Telepots", 6); makeTab("Settings", 7)
 
 local minimized = false
