@@ -241,7 +241,7 @@ local KeyStatus = Instance.new("TextLabel")
 KeyStatus.Size = UDim2.new(1, -14, 0, 18)
 KeyStatus.Position = UDim2.new(0, 7, 0, 126)
 KeyStatus.BackgroundTransparency = 1
-KeyStatus.Text = "Ключ для доступа"
+KeyStatus.Text = "Введите ключ для доступа -.-"
 KeyStatus.TextColor3 = Color3.fromRGB(200, 200, 200)
 KeyStatus.Font = Enum.Font.SourceSans
 KeyStatus.TextSize = 11
@@ -284,7 +284,7 @@ local function loadTab(name)
 end
 
 UnlockButton.MouseButton1Click:Connect(function()
-    KeyStatus.Text = "Ключ для доступа"
+    KeyStatus.Text = "Введите ключ для доступа -.-"
     KeyStatus.TextColor3 = Color3.fromRGB(200, 200, 200)
 
     if KeyInput.Text == "ABC" then
@@ -309,7 +309,7 @@ end)
 
 KeyInput:GetPropertyChangedSignal("Text"):Connect(function()
     if not FCS.Unlocked then
-        KeyStatus.Text = "Ключ для доступа"
+        KeyStatus.Text = "Введите ключ для доступа -.-"
         KeyStatus.TextColor3 = Color3.fromRGB(200, 200, 200)
     end
 end)
