@@ -313,7 +313,7 @@ UnlockButton.MouseButton1Click:Connect(function()
     else
         KeyStatus.Text = "Неверный ключ!"
         KeyStatus.TextColor3 = Color3.fromRGB(255, 80, 80)
-        Message("НЕВЕРНЫЙ КЛЮЧ", "Попробуй ABC", 5)
+        Message("НЕВЕРНЫЙ КЛЮЧ", "Ну как так бля", 5)
     end
 end)
 
