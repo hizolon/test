@@ -299,7 +299,17 @@ UnlockButton.MouseButton1Click:Connect(function()
         MainFrame.Active = true
         showPage("Home")
         Message("Скрипт успешно разблокирован :D", "Нихуя ты молодец", 5)
-        for name, _ in pairs(files) do loadTab(name) end
+
+        -- Последовательная загрузка вкладок с паузой 0.15 с
+        task.spawn(function()
+            local order = { "Home", "Movement", "PVP", "Hitbox", "HP", "Telepots", "Settings" }
+            for _, name in ipairs(order) do
+                if files[name] then
+                    loadTab(name)
+                    task.wait(0.15)
+                end
+            end
+        end)
     else
         KeyStatus.Text = "Неверный ключ!"
         KeyStatus.TextColor3 = Color3.fromRGB(255, 80, 80)
