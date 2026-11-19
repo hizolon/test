@@ -161,8 +161,8 @@ local function makeTab(name, order)
     tabButtons[name] = btn
 end
 
-registerPage("Home"); registerPage("Movement"); registerPage("PVP"); registerPage("HP"); registerPage("Telepots"); registerPage("Settings")
-makeTab("Home", 1); makeTab("Movement", 2); makeTab("PVP", 3); makeTab("HP", 4); makeTab("Telepots", 5); makeTab("Settings", 6)
+registerPage("Home"); registerPage("Movement"); registerPage("PVP"); registerPage("Hitbox"); registerPage("HP"); registerPage("Telepots"); registerPage("Settings")
+makeTab("Home", 1); makeTab("Movement", 2); makeTab("PVP", 3); makeTab("Hitbox", 4); makeTab("HP", 5); makeTab("Telepots", 6); makeTab("Settings", 7)
 
 local minimized = false
 MinimizeButton.MouseButton1Click:Connect(function()
@@ -245,6 +245,7 @@ local files = {
     Home = "https://raw.githubusercontent.com/hizolon/test/refs/heads/main/home.lua",
     Movement = "https://raw.githubusercontent.com/hizolon/test/refs/heads/main/movement.lua",
     PVP = "https://raw.githubusercontent.com/hizolon/test/refs/heads/main/pvp.lua",
+    Hitbox = "https://raw.githubusercontent.com/hizolon/test/refs/heads/main/hitbox.lua",
     HP = "https://raw.githubusercontent.com/hizolon/test/refs/heads/main/hp.lua",
     Telepots = "https://raw.githubusercontent.com/hizolon/test/refs/heads/main/telepots.lua",
     Settings = "https://raw.githubusercontent.com/hizolon/test/refs/heads/main/settings.lua"
@@ -273,7 +274,6 @@ UnlockButton.MouseButton1Click:Connect(function()
     KeyStatus.Text = "Ключ для доступа"
     KeyStatus.TextColor3 = Color3.fromRGB(200, 200, 200)
 
-    -- ПРОВЕРКА БЕЗ ID: только ключ "ABC"
     if KeyInput.Text == "ABC" then
         FCS.Unlocked = true
         KeyStatus.Text = "Скрипт разблокирован! ;3"
