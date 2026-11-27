@@ -57,6 +57,39 @@ local function makeSlider(parent, yPos)
     return { Back = back, Fill = fill, Knob = knob }
 end
 
+local function makeToggle(text, y)
+    local b = Instance.new("TextButton")
+    b.Position = UDim2.new(0, SIDE_PADDING, 0, y)
+    b.Size = UDim2.new(1, -(SIDE_PADDING * 2), 0, ROW_H)
+    b.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+    b.BorderSizePixel = 0
+    b.Text = text .. ": OFF"
+    b.TextColor3 = Color3.fromRGB(255, 255, 255)
+    b.Font = Enum.Font.SourceSansBold
+    b.TextSize = 12
+    b.TextXAlignment = Enum.TextXAlignment.Left
+    b.Parent = Scroll
+    local pad = Instance.new("UIPadding"); pad.PaddingLeft = UDim.new(0, 8); pad.Parent = b
+    local bc = Instance.new("UICorner"); bc.CornerRadius = UDim.new(0, 4); bc.Parent = b
+    return b
+end
+
+local function normalizeKey(s)
+    s = string.upper(s)
+    s = string.gsub(s, "[^A-Z0-9]", "")
+    return s
+end
+
+local function keyFromString(s)
+    s = normalizeKey(s)
+    if s == "" then return nil end
+    local digitNames = { ["1"]="One", ["2"]="Two", ["3"]="Three", ["4"]="Four", ["5"]="Five", ["6"]="Six", ["7"]="Seven", ["8"]="Eight", ["9"]="Nine", ["0"]="Zero" }
+    local name = digitNames[s] or s
+    local ok, key = pcall(function() return Enum.KeyCode[name] end)
+    if ok and key then return key end
+    return nil
+end
+
 -- =========================================================
 -- 1) TP PLAYER KILL
 -- =========================================================
@@ -595,22 +628,6 @@ AimKeyBox.ClearTextOnFocus = false
 AimKeyBox.Parent = Scroll
 local aimKeyCorner = Instance.new("UICorner"); aimKeyCorner.CornerRadius = UDim.new(0, 4); aimKeyCorner.Parent = AimKeyBox
 
-local function normalizeKey(s)
-    s = string.upper(s)
-    s = string.gsub(s, "[^A-Z0-9]", "")
-    return s
-end
-
-local function keyFromString(s)
-    s = normalizeKey(s)
-    if s == "" then return nil end
-    local digitNames = { ["1"]="One", ["2"]="Two", ["3"]="Three", ["4"]="Four", ["5"]="Five", ["6"]="Six", ["7"]="Seven", ["8"]="Eight", ["9"]="Nine", ["0"]="Zero" }
-    local name = digitNames[s] or s
-    local ok, key = pcall(function() return Enum.KeyCode[name] end)
-    if ok and key then return key end
-    return nil
-end
-
 local function refreshHotkey()
     local raw = AimKeyBox.Text
     local normalized = normalizeKey(raw)
@@ -749,7 +766,7 @@ UIS.InputBegan:Connect(function(input, gameProcessed)
 end)
 
 -- =========================================================
--- 5) INVISIBILITY (выше Anti ragdoll)
+-- 5) INVISIBILITY (перемещена выше Anti ragdoll, горячая клавиша Z)
 -- =========================================================
 local INVIS_Y = 190
 local invisActive = false
@@ -1032,7 +1049,7 @@ NoclipBtn.MouseButton1Click:Connect(function()
 end)
 
 -- =========================================================
--- 7) ANTI RAGDOLL (ниже Invisibility)
+-- 7) ANTI RAGDOLL (перемещена ниже Invisibility)
 -- =========================================================
 local antiRagdollEnabled = false
 local defaultGravity = workspace.Gravity
