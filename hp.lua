@@ -6,6 +6,7 @@ local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local StarterGui = game:GetService("StarterGui")
 local Workspace = game:GetService("Workspace")
+local UIS = game:GetService("UserInputService")
 local Player = Players.LocalPlayer
 local FCS = getgenv().FCS
 
@@ -206,12 +207,12 @@ local function hpSetupSliderDrag(row)
         end
     end)
 end
-game:GetService("UserInputService").InputChanged:Connect(function(input)
+UIS.InputChanged:Connect(function(input)
     if hpDraggingSlider and hpActiveRow and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
         hpSetRowFromX(hpActiveRow, input.Position.X)
     end
 end)
-game:GetService("UserInputService").InputEnded:Connect(function(input)
+UIS.InputEnded:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
         hpDraggingSlider = false
         hpActiveRow = nil
@@ -521,9 +522,76 @@ end
 
 -- UI сборка HP
 local saveZonaBtn = hpCreateButton("Save zona", 6)
+saveZonaBtn.Size = UDim2.new(1, -(HP_SIDE_PADDING * 2 + HP_GAP + HP_VALUE_WIDTH), 0, 28)
 saveZonaBtn.onChanged = function(en)
     if en then enableSaveZona(50) else disableSaveZona() end
 end
+
+-- Горячая клавиша Save zona (стиль как у Aim)
+local SaveZonaKeyBox = Instance.new("TextBox")
+SaveZonaKeyBox.Name = "SaveZonaKeyBox"
+SaveZonaKeyBox.AnchorPoint = Vector2.new(1, 0)
+SaveZonaKeyBox.Position = UDim2.new(1, -HP_SIDE_PADDING, 0, 6)
+SaveZonaKeyBox.Size = UDim2.new(0, HP_VALUE_WIDTH, 0, 28)
+SaveZonaKeyBox.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+SaveZonaKeyBox.BorderSizePixel = 0
+SaveZonaKeyBox.Text = "H"
+SaveZonaKeyBox.PlaceholderText = "..."
+SaveZonaKeyBox.PlaceholderColor3 = Color3.fromRGB(150, 150, 150)
+SaveZonaKeyBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+SaveZonaKeyBox.Font = Enum.Font.SourceSansBold
+SaveZonaKeyBox.TextSize = 12
+SaveZonaKeyBox.ClearTextOnFocus = false
+SaveZonaKeyBox.Parent = page
+
+local saveZonaKeyCorner = Instance.new("UICorner")
+saveZonaKeyCorner.CornerRadius = UDim.new(0, 4)
+saveZonaKeyCorner.Parent = SaveZonaKeyBox
+
+local function hpNormalizeKey(s)
+    s = string.upper(s)
+    s = string.gsub(s, "[^A-Z0-9]", "")
+    return s
+end
+
+local function hpKeyFromString(s)
+    s = hpNormalizeKey(s)
+    if s == "" then return nil end
+    local digitNames = { ["1"]="One", ["2"]="Two", ["3"]="Three", ["4"]="Four", ["5"]="Five", ["6"]="Six", ["7"]="Seven", ["8"]="Eight", ["9"]="Nine", ["0"]="Zero" }
+    local name = digitNames[s] or s
+    local ok, key = pcall(function() return Enum.KeyCode[name] end)
+    if ok and key then return key end
+    return nil
+end
+
+local saveZonaHotkey = Enum.KeyCode.H
+
+local function hpRefreshSaveZonaHotkey()
+    local raw = SaveZonaKeyBox.Text
+    local normalized = hpNormalizeKey(raw)
+    if normalized ~= raw then SaveZonaKeyBox.Text = normalized; return end
+    if normalized == "" then saveZonaHotkey = nil; return end
+    local key = hpKeyFromString(normalized)
+    if key then saveZonaHotkey = key else SaveZonaKeyBox.Text = ""; saveZonaHotkey = nil end
+end
+
+SaveZonaKeyBox:GetPropertyChangedSignal("Text"):Connect(hpRefreshSaveZonaHotkey)
+SaveZonaKeyBox.FocusLost:Connect(function() SaveZonaKeyBox:ReleaseFocus() end)
+
+local function toggleSaveZona()
+    if not saveZonaBtn then return end
+    saveZonaBtn.enabled = not saveZonaBtn.enabled
+    saveZonaBtn.button.Text = saveZonaBtn.name .. ": " .. (saveZonaBtn.enabled and "ON" or "OFF")
+    saveZonaBtn.button.BackgroundColor3 = saveZonaBtn.enabled and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(60, 60, 60)
+    if saveZonaBtn.onChanged then saveZonaBtn.onChanged(saveZonaBtn.enabled) end
+end
+
+UIS.InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+    if saveZonaHotkey and input.KeyCode == saveZonaHotkey then
+        if FCS.Unlocked then toggleSaveZona() end
+    end
+end)
 
 local autoSaveRow = hpCreateSliderRow("Auto save zona", 40)
 autoSaveRow.value = 30
