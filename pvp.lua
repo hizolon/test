@@ -864,42 +864,10 @@ local function makeToggle(text, y)
     return b
 end
 
-local AntiRagdollBtn = makeToggle("Anti ragdoll", AR_Y)
-AntiRagdollBtn.MouseButton1Click:Connect(function()
-    if not FCS.Unlocked then return end
-    antiRagdollEnabled = not antiRagdollEnabled
-    AntiRagdollBtn.Text = "Anti ragdoll: " .. (antiRagdollEnabled and "ON" or "OFF")
-    AntiRagdollBtn.BackgroundColor3 = antiRagdollEnabled and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(60, 60, 60)
-    if not antiRagdollEnabled and workspace.Gravity ~= defaultGravity then
-        workspace.Gravity = defaultGravity
-    end
-end)
-
-local NoclipBtn = makeToggle("Noclip", NC_Y)
-NoclipBtn.MouseButton1Click:Connect(function()
-    if not FCS.Unlocked then return end
-    if noclipEnabled then
-        noclipDisable()
-        NoclipBtn.Text = "Noclip: OFF"
-        NoclipBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-    else
-        noclipEnable()
-        NoclipBtn.Text = "Noclip: ON"
-        NoclipBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 0)
-    end
-end)
-
-task.spawn(function()
-    while true do
-        task.wait(0.05)
-        applyAntiRagdoll()
-    end
-end)
-
 -- =========================================================
--- 7) INVISIBILITY
+-- 7) INVISIBILITY (перемещена выше, с горячей клавишей Z)
 -- =========================================================
-local INVIS_Y = NC_Y + ROW_H + 6
+local INVIS_Y = 190
 local invisActive = false
 local invisModel = Instance.new("Model", Workspace)
 local invisHumanoid = Instance.new("Humanoid", invisModel)
@@ -916,8 +884,37 @@ local lastInvisHumanoid = nil
 local savedRootCFrame = nil
 local invisProcessing = false
 local isReviving = false
+local invisHotkey = Enum.KeyCode.Z
 
 local InvisButton = makeToggle("Invisibility", INVIS_Y)
+InvisButton.Size = UDim2.new(1, -(SIDE_PADDING * 2 + GAP + VALUE_WIDTH), 0, ROW_H)
+
+local InvisKeyBox = Instance.new("TextBox")
+InvisKeyBox.AnchorPoint = Vector2.new(1, 0)
+InvisKeyBox.Position = UDim2.new(1, -SIDE_PADDING, 0, INVIS_Y)
+InvisKeyBox.Size = UDim2.new(0, VALUE_WIDTH, 0, ROW_H)
+InvisKeyBox.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+InvisKeyBox.BorderSizePixel = 0
+InvisKeyBox.Text = "Z"
+InvisKeyBox.PlaceholderText = "..."
+InvisKeyBox.PlaceholderColor3 = Color3.fromRGB(150, 150, 150)
+InvisKeyBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+InvisKeyBox.Font = Enum.Font.SourceSansBold
+InvisKeyBox.TextSize = 12
+InvisKeyBox.ClearTextOnFocus = false
+InvisKeyBox.Parent = Scroll
+local invisKeyCorner = Instance.new("UICorner"); invisKeyCorner.CornerRadius = UDim.new(0, 4); invisKeyCorner.Parent = InvisKeyBox
+
+local function refreshInvisHotkey()
+    local raw = InvisKeyBox.Text
+    local normalized = normalizeKey(raw)
+    if normalized ~= raw then InvisKeyBox.Text = normalized; return end
+    if normalized == "" then invisHotkey = nil; return end
+    local key = keyFromString(normalized)
+    if key then invisHotkey = key else InvisKeyBox.Text = ""; invisHotkey = nil end
+end
+InvisKeyBox:GetPropertyChangedSignal("Text"):Connect(refreshInvisHotkey)
+InvisKeyBox.FocusLost:Connect(function() InvisKeyBox:ReleaseFocus() end)
 
 local function setInvisButtonVisual(on)
     if not InvisButton then return end
@@ -1000,6 +997,15 @@ InvisButton.MouseButton1Click:Connect(function()
     if invisActive then disableInvis() else enableInvis() end
 end)
 
+UIS.InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+    if invisHotkey and input.KeyCode == invisHotkey then
+        if FCS.Unlocked then
+            if invisActive then disableInvis() else enableInvis() end
+        end
+    end
+end)
+
 RunService.Heartbeat:Connect(function()
     if isReviving then return end
     if not invisActive then return end
@@ -1061,7 +1067,45 @@ RunService.Heartbeat:Connect(function()
 end)
 
 -- =========================================================
--- 8) УВЕДОМЛЕНИЕ (для Anti Dead Counter)
+-- 8) ANTI RAGDOLL (перемещена ниже Invisibility)
+-- =========================================================
+local AntiRagdollBtn = makeToggle("Anti ragdoll", AR_Y)
+AntiRagdollBtn.MouseButton1Click:Connect(function()
+    if not FCS.Unlocked then return end
+    antiRagdollEnabled = not antiRagdollEnabled
+    AntiRagdollBtn.Text = "Anti ragdoll: " .. (antiRagdollEnabled and "ON" or "OFF")
+    AntiRagdollBtn.BackgroundColor3 = antiRagdollEnabled and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(60, 60, 60)
+    if not antiRagdollEnabled and workspace.Gravity ~= defaultGravity then
+        workspace.Gravity = defaultGravity
+    end
+end)
+
+-- =========================================================
+-- 9) NOCLIP (кнопка)
+-- =========================================================
+local NoclipBtn = makeToggle("Noclip", NC_Y)
+NoclipBtn.MouseButton1Click:Connect(function()
+    if not FCS.Unlocked then return end
+    if noclipEnabled then
+        noclipDisable()
+        NoclipBtn.Text = "Noclip: OFF"
+        NoclipBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+    else
+        noclipEnable()
+        NoclipBtn.Text = "Noclip: ON"
+        NoclipBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 0)
+    end
+end)
+
+task.spawn(function()
+    while true do
+        task.wait(0.05)
+        applyAntiRagdoll()
+    end
+end)
+
+-- =========================================================
+-- 10) УВЕДОМЛЕНИЕ (для Anti Dead Counter)
 -- =========================================================
 local notifGui = Instance.new("ScreenGui")
 notifGui.Name = "ID:11915758727_Notif"
@@ -1154,7 +1198,7 @@ local function showCounterNotification(nick, duration)
 end
 
 -- =========================================================
--- 9) УДАЛЕНИЕ "0" ПОСЛЕ DEATH COUNTER
+-- 11) УДАЛЕНИЕ "0" ПОСЛЕ DEATH COUNTER
 -- =========================================================
 local function looksLikeZero(text)
     if type(text) ~= "string" then return false end
@@ -1273,9 +1317,9 @@ local function applyHighlight(character, color, name, duration)
 end
 
 -- =========================================================
--- 10) ANTI DEAD COUNTER
+-- 12) ANTI DEAD COUNTER
 -- =========================================================
-local ADC_Y = INVIS_Y + ROW_H + 6
+local ADC_Y = NC_Y + ROW_H + 6
 local antiCounterActive = false
 local tsbWatchers = {}
 local counterCooldown = {}
@@ -1459,163 +1503,7 @@ Players.PlayerRemoving:Connect(function(p)
 end)
 
 -- =========================================================
--- 11) HERO HUNTER (one-shoot)
--- =========================================================
-local HH_Y = ADC_Y + ROW_H + 6
-local heroHunterEnabled = false
-local DEFAULT_FALL_Y = nil
-pcall(function() DEFAULT_FALL_Y = Workspace.FallenPartsDestroyHeight end)
-if not DEFAULT_FALL_Y or DEFAULT_FALL_Y == -math.huge then DEFAULT_FALL_Y = -500 end
-
-local function hhGetChar() return Player.Character end
-local function hhGetHRP() local c = hhGetChar(); return c and c:FindFirstChild("HumanoidRootPart") end
-local function hhGetHum() local c = hhGetChar(); return c and c:FindFirstChildOfClass("Humanoid") end
-
-local hhGodHeartbeatConn = nil
-local hhGodHealthConns = {}
-local hhGodStateConns = {}
-local hhGodCharacterConn = nil
-
-local function hhHookGodHum(hum)
-    table.insert(hhGodHealthConns, hum.HealthChanged:Connect(function(h)
-        if heroHunterEnabled and h <= 0 then
-            hum.Health = hum.MaxHealth
-            hum:ChangeState(Enum.HumanoidStateType.Running)
-        end
-    end))
-    pcall(function() hum:SetStateEnabled(Enum.HumanoidStateType.Dead, false) end)
-    table.insert(hhGodStateConns, hum.StateChanged:Connect(function(_, new)
-        if heroHunterEnabled and new == Enum.HumanoidStateType.Dead then
-            hum.Health = hum.MaxHealth
-            hum:ChangeState(Enum.HumanoidStateType.Running)
-        end
-    end))
-end
-
-local function hhHookGodChar(char)
-    local hum = char:FindFirstChildOfClass("Humanoid") or char:WaitForChild("Humanoid", 5)
-    if hum then hhHookGodHum(hum) end
-end
-
-local function hhEnableGod()
-    pcall(function() Workspace.FallenPartsDestroyHeight = -math.huge end)
-    if hhGodHeartbeatConn then return end
-    hhGodHeartbeatConn = RunService.Heartbeat:Connect(function()
-        pcall(function() Workspace.FallenPartsDestroyHeight = -math.huge end)
-    end)
-    local char = hhGetChar()
-    if char then hhHookGodChar(char) end
-    hhGodCharacterConn = Player.CharacterAdded:Connect(hhHookGodChar)
-end
-
-local function hhDisableGod()
-    if hhGodHeartbeatConn then hhGodHeartbeatConn:Disconnect(); hhGodHeartbeatConn = nil end
-    if hhGodCharacterConn then hhGodCharacterConn:Disconnect(); hhGodCharacterConn = nil end
-    for _, c in ipairs(hhGodHealthConns) do c:Disconnect() end
-    hhGodHealthConns = {}
-    for _, c in ipairs(hhGodStateConns) do c:Disconnect() end
-    hhGodStateConns = {}
-    pcall(function() Workspace.FallenPartsDestroyHeight = DEFAULT_FALL_Y end)
-    local hum = hhGetHum()
-    if hum then pcall(function() hum:SetStateEnabled(Enum.HumanoidStateType.Dead, true) end) end
-end
-
-local hhCamLocked = false
-local hhSavedCamType = nil
-local hhSavedCamSubject = nil
-local hhSavedCamCFrame = nil
-local hhCamKeepConn = nil
-
-local function hhLockCamera()
-    local cam = Workspace.CurrentCamera
-    if not cam then return end
-    hhSavedCamType = cam.CameraType
-    hhSavedCamSubject = cam.CameraSubject
-    hhSavedCamCFrame = cam.CFrame
-    cam.CameraType = Enum.CameraType.Scriptable
-    cam.CFrame = hhSavedCamCFrame
-    hhCamLocked = true
-    if hhCamKeepConn then hhCamKeepConn:Disconnect() end
-    hhCamKeepConn = RunService.RenderStepped:Connect(function()
-        if not hhCamLocked then return end
-        local c = Workspace.CurrentCamera
-        if not c then return end
-        if c.CameraType ~= Enum.CameraType.Scriptable then c.CameraType = Enum.CameraType.Scriptable end
-        if hhSavedCamCFrame and (c.CFrame.Position - hhSavedCamCFrame.Position).Magnitude > 0.01 then
-            c.CFrame = hhSavedCamCFrame
-        end
-    end)
-end
-
-local function hhUnlockCamera()
-    hhCamLocked = false
-    if hhCamKeepConn then hhCamKeepConn:Disconnect(); hhCamKeepConn = nil end
-    local cam = Workspace.CurrentCamera
-    if not cam then return end
-    if hhSavedCamType then cam.CameraType = hhSavedCamType end
-    if hhSavedCamSubject then cam.CameraSubject = hhSavedCamSubject end
-end
-
-local hhTeleportActive = false
-local function hhDoTeleport()
-    if not heroHunterEnabled then return end
-    if hhTeleportActive then return end
-    hhTeleportActive = true
-    local hrp = hhGetHRP()
-    if not hrp then hhTeleportActive = false; return end
-    local originalCF = hrp.CFrame
-    local x = originalCF.Position.X
-    local z = originalCF.Position.Z
-    hhLockCamera()
-    local t0 = os.clock(); while os.clock() - t0 < 0.7 do task.wait(0.01) end
-    local h1 = hhGetHRP()
-    if h1 then
-        h1.AssemblyLinearVelocity = Vector3.zero
-        h1.AssemblyAngularVelocity = Vector3.zero
-        h1.CFrame = CFrame.new(x, -270, z)
-        h1.AssemblyLinearVelocity = Vector3.zero
-    end
-    local t1 = os.clock(); while os.clock() - t1 < 0.15 do task.wait(0.01) end
-    local h2 = hhGetHRP()
-    if h2 then
-        h2.AssemblyLinearVelocity = Vector3.zero
-        h2.AssemblyAngularVelocity = Vector3.zero
-        h2.CFrame = CFrame.new(x, -550, z)
-        h2.AssemblyLinearVelocity = Vector3.zero
-    end
-    local t2 = os.clock(); while os.clock() - t2 < 0.2 do task.wait(0.01) end
-    local h3 = hhGetHRP()
-    if h3 then
-        h3.AssemblyLinearVelocity = Vector3.zero
-        h3.AssemblyAngularVelocity = Vector3.zero
-        h3.CFrame = originalCF
-        h3.AssemblyLinearVelocity = Vector3.zero
-    end
-    hhUnlockCamera()
-    hhTeleportActive = false
-end
-
-local HeroHunterBtn = makeToggle("Hero Hunter (one-shoot)", HH_Y)
-HeroHunterBtn.MouseButton1Click:Connect(function()
-    if not FCS.Unlocked then return end
-    heroHunterEnabled = not heroHunterEnabled
-    HeroHunterBtn.Text = "Hero Hunter (one-shoot): " .. (heroHunterEnabled and "ON" or "OFF")
-    HeroHunterBtn.BackgroundColor3 = heroHunterEnabled and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(60, 60, 60)
-    if heroHunterEnabled then hhEnableGod() else hhDisableGod() end
-end)
-
-UIS.InputBegan:Connect(function(input, gameProcessed)
-    if gameProcessed then return end
-    if not heroHunterEnabled then return end
-    if input.UserInputType ~= Enum.UserInputType.Keyboard then return end
-    local k = input.KeyCode
-    local isOne = (k == Enum.KeyCode.One) or (k == Enum.KeyCode.KeypadOne)
-    local isTwo = (k == Enum.KeyCode.Two) or (k == Enum.KeyCode.KeypadTwo)
-    if isOne or isTwo then task.spawn(hhDoTeleport) end
-end)
-
--- =========================================================
--- 12) СЛАЙДЕРЫ
+-- 13) СЛАЙДЕРЫ
 -- =========================================================
 local draggingSlider = false
 local activeSlider = nil
@@ -1656,5 +1544,5 @@ end)
 updateCubeVisuals()
 updateAmVisuals()
 
--- CanvasSize: докрутить до Hero Hunter
-Scroll.CanvasSize = UDim2.new(0, 0, 0, HH_Y + ROW_H + 10)
+-- CanvasSize: до конца Anti dead counter
+Scroll.CanvasSize = UDim2.new(0, 0, 0, ADC_Y + ROW_H + 10)
