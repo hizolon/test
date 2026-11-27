@@ -749,123 +749,7 @@ UIS.InputBegan:Connect(function(input, gameProcessed)
 end)
 
 -- =========================================================
--- 5) ANTI RAGDOLL
--- =========================================================
-local antiRagdollEnabled = false
-local defaultGravity = workspace.Gravity
-local AR_Y = 190
-
-local function isRagdollState(hum)
-    local st = hum:GetState()
-    return st == Enum.HumanoidStateType.Physics or st == Enum.HumanoidStateType.FallingDown or st == Enum.HumanoidStateType.Ragdoll
-end
-
-local function applyAntiRagdoll()
-    local char = Player.Character
-    local hum = char and char:FindFirstChildOfClass("Humanoid")
-    if not hum then
-        if workspace.Gravity ~= defaultGravity then workspace.Gravity = defaultGravity end
-        return
-    end
-    if not antiRagdollEnabled then
-        if workspace.Gravity ~= defaultGravity then workspace.Gravity = defaultGravity end
-        return
-    end
-    if isRagdollState(hum) then
-        workspace.Gravity = 0
-        if hum.PlatformStand then hum.PlatformStand = false end
-        pcall(function() hum:ChangeState(Enum.HumanoidStateType.GettingUp) end)
-    else
-        if workspace.Gravity ~= defaultGravity then workspace.Gravity = defaultGravity end
-    end
-end
-
--- =========================================================
--- 6) NOCLIP
--- =========================================================
-local noclipEnabled = false
-local NoclipConnection = nil
-local floatName = "HumanoidRootPart"
-local NC_Y = 220
-
-local function setAllCollide(state)
-    local char = Player.Character
-    if not char then return end
-    for _, v in ipairs(char:GetDescendants()) do
-        if v:IsA("BasePart") then
-            v.CanCollide = state; v.CanTouch = state; v.CanQuery = state
-        end
-    end
-end
-
-local function noclipEnable()
-    if noclipEnabled then return end
-    noclipEnabled = true
-    NoclipConnection = RunService.Heartbeat:Connect(function()
-        if not noclipEnabled then return end
-        local char = Player.Character
-        if not char then return end
-        for _, v in ipairs(char:GetDescendants()) do
-            if v:IsA("BasePart") then
-                if v.CanCollide then v.CanCollide = false end
-                if v.CanTouch then v.CanTouch = false end
-                if v.CanQuery then v.CanQuery = false end
-            end
-        end
-        local hum = char:FindFirstChildOfClass("Humanoid")
-        if hum then
-            hum:SetStateEnabled(Enum.HumanoidStateType.Landed, false)
-            hum:SetStateEnabled(Enum.HumanoidStateType.FallingDown, false)
-            hum:SetStateEnabled(Enum.HumanoidStateType.Ragdoll, false)
-            hum:SetStateEnabled(Enum.HumanoidStateType.PlatformStanding, false)
-        end
-        local hrp = char:FindFirstChild(floatName)
-        if hrp and hrp.Position.Y < -100 then
-            local params = RaycastParams.new()
-            params.FilterType = Enum.RaycastFilterType.Exclude
-            params.FilterDescendantsInstances = { char }
-            local result = Workspace:Raycast(Vector3.new(hrp.Position.X, 500, hrp.Position.Z), Vector3.new(0, -1000, 0), params)
-            if result then
-                hrp.CFrame = CFrame.new(hrp.Position.X, result.Position.Y + 3, hrp.Position.Z)
-                hrp.AssemblyLinearVelocity = Vector3.zero
-            end
-        end
-    end)
-end
-
-local function noclipDisable()
-    noclipEnabled = false
-    if NoclipConnection then NoclipConnection:Disconnect(); NoclipConnection = nil end
-    setAllCollide(true)
-    local char = Player.Character
-    local hum = char and char:FindFirstChildOfClass("Humanoid")
-    if hum then
-        hum:SetStateEnabled(Enum.HumanoidStateType.Landed, true)
-        hum:SetStateEnabled(Enum.HumanoidStateType.FallingDown, true)
-        hum:SetStateEnabled(Enum.HumanoidStateType.Ragdoll, true)
-        hum:SetStateEnabled(Enum.HumanoidStateType.PlatformStanding, true)
-    end
-end
-
-local function makeToggle(text, y)
-    local b = Instance.new("TextButton")
-    b.Position = UDim2.new(0, SIDE_PADDING, 0, y)
-    b.Size = UDim2.new(1, -(SIDE_PADDING * 2), 0, ROW_H)
-    b.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-    b.BorderSizePixel = 0
-    b.Text = text .. ": OFF"
-    b.TextColor3 = Color3.fromRGB(255, 255, 255)
-    b.Font = Enum.Font.SourceSansBold
-    b.TextSize = 12
-    b.TextXAlignment = Enum.TextXAlignment.Left
-    b.Parent = Scroll
-    local pad = Instance.new("UIPadding"); pad.PaddingLeft = UDim.new(0, 8); pad.Parent = b
-    local bc = Instance.new("UICorner"); bc.CornerRadius = UDim.new(0, 4); bc.Parent = b
-    return b
-end
-
--- =========================================================
--- 7) INVISIBILITY (перемещена выше, с горячей клавишей Z)
+-- 5) INVISIBILITY (выше Anti ragdoll)
 -- =========================================================
 local INVIS_Y = 190
 local invisActive = false
@@ -1067,22 +951,72 @@ RunService.Heartbeat:Connect(function()
 end)
 
 -- =========================================================
--- 8) ANTI RAGDOLL (перемещена ниже Invisibility)
+-- 6) NOCLIP (логика)
 -- =========================================================
-local AntiRagdollBtn = makeToggle("Anti ragdoll", AR_Y)
-AntiRagdollBtn.MouseButton1Click:Connect(function()
-    if not FCS.Unlocked then return end
-    antiRagdollEnabled = not antiRagdollEnabled
-    AntiRagdollBtn.Text = "Anti ragdoll: " .. (antiRagdollEnabled and "ON" or "OFF")
-    AntiRagdollBtn.BackgroundColor3 = antiRagdollEnabled and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(60, 60, 60)
-    if not antiRagdollEnabled and workspace.Gravity ~= defaultGravity then
-        workspace.Gravity = defaultGravity
-    end
-end)
+local noclipEnabled = false
+local NoclipConnection = nil
+local floatName = "HumanoidRootPart"
+local NC_Y = 220
 
--- =========================================================
--- 9) NOCLIP (кнопка)
--- =========================================================
+local function setAllCollide(state)
+    local char = Player.Character
+    if not char then return end
+    for _, v in ipairs(char:GetDescendants()) do
+        if v:IsA("BasePart") then
+            v.CanCollide = state; v.CanTouch = state; v.CanQuery = state
+        end
+    end
+end
+
+local function noclipEnable()
+    if noclipEnabled then return end
+    noclipEnabled = true
+    NoclipConnection = RunService.Heartbeat:Connect(function()
+        if not noclipEnabled then return end
+        local char = Player.Character
+        if not char then return end
+        for _, v in ipairs(char:GetDescendants()) do
+            if v:IsA("BasePart") then
+                if v.CanCollide then v.CanCollide = false end
+                if v.CanTouch then v.CanTouch = false end
+                if v.CanQuery then v.CanQuery = false end
+            end
+        end
+        local hum = char:FindFirstChildOfClass("Humanoid")
+        if hum then
+            hum:SetStateEnabled(Enum.HumanoidStateType.Landed, false)
+            hum:SetStateEnabled(Enum.HumanoidStateType.FallingDown, false)
+            hum:SetStateEnabled(Enum.HumanoidStateType.Ragdoll, false)
+            hum:SetStateEnabled(Enum.HumanoidStateType.PlatformStanding, false)
+        end
+        local hrp = char:FindFirstChild(floatName)
+        if hrp and hrp.Position.Y < -100 then
+            local params = RaycastParams.new()
+            params.FilterType = Enum.RaycastFilterType.Exclude
+            params.FilterDescendantsInstances = { char }
+            local result = Workspace:Raycast(Vector3.new(hrp.Position.X, 500, hrp.Position.Z), Vector3.new(0, -1000, 0), params)
+            if result then
+                hrp.CFrame = CFrame.new(hrp.Position.X, result.Position.Y + 3, hrp.Position.Z)
+                hrp.AssemblyLinearVelocity = Vector3.zero
+            end
+        end
+    end)
+end
+
+local function noclipDisable()
+    noclipEnabled = false
+    if NoclipConnection then NoclipConnection:Disconnect(); NoclipConnection = nil end
+    setAllCollide(true)
+    local char = Player.Character
+    local hum = char and char:FindFirstChildOfClass("Humanoid")
+    if hum then
+        hum:SetStateEnabled(Enum.HumanoidStateType.Landed, true)
+        hum:SetStateEnabled(Enum.HumanoidStateType.FallingDown, true)
+        hum:SetStateEnabled(Enum.HumanoidStateType.Ragdoll, true)
+        hum:SetStateEnabled(Enum.HumanoidStateType.PlatformStanding, true)
+    end
+end
+
 local NoclipBtn = makeToggle("Noclip", NC_Y)
 NoclipBtn.MouseButton1Click:Connect(function()
     if not FCS.Unlocked then return end
@@ -1097,6 +1031,49 @@ NoclipBtn.MouseButton1Click:Connect(function()
     end
 end)
 
+-- =========================================================
+-- 7) ANTI RAGDOLL (ниже Invisibility)
+-- =========================================================
+local antiRagdollEnabled = false
+local defaultGravity = workspace.Gravity
+local AR_Y = 250
+
+local function isRagdollState(hum)
+    local st = hum:GetState()
+    return st == Enum.HumanoidStateType.Physics or st == Enum.HumanoidStateType.FallingDown or st == Enum.HumanoidStateType.Ragdoll
+end
+
+local function applyAntiRagdoll()
+    local char = Player.Character
+    local hum = char and char:FindFirstChildOfClass("Humanoid")
+    if not hum then
+        if workspace.Gravity ~= defaultGravity then workspace.Gravity = defaultGravity end
+        return
+    end
+    if not antiRagdollEnabled then
+        if workspace.Gravity ~= defaultGravity then workspace.Gravity = defaultGravity end
+        return
+    end
+    if isRagdollState(hum) then
+        workspace.Gravity = 0
+        if hum.PlatformStand then hum.PlatformStand = false end
+        pcall(function() hum:ChangeState(Enum.HumanoidStateType.GettingUp) end)
+    else
+        if workspace.Gravity ~= defaultGravity then workspace.Gravity = defaultGravity end
+    end
+end
+
+local AntiRagdollBtn = makeToggle("Anti ragdoll", AR_Y)
+AntiRagdollBtn.MouseButton1Click:Connect(function()
+    if not FCS.Unlocked then return end
+    antiRagdollEnabled = not antiRagdollEnabled
+    AntiRagdollBtn.Text = "Anti ragdoll: " .. (antiRagdollEnabled and "ON" or "OFF")
+    AntiRagdollBtn.BackgroundColor3 = antiRagdollEnabled and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(60, 60, 60)
+    if not antiRagdollEnabled and workspace.Gravity ~= defaultGravity then
+        workspace.Gravity = defaultGravity
+    end
+end)
+
 task.spawn(function()
     while true do
         task.wait(0.05)
@@ -1105,7 +1082,7 @@ task.spawn(function()
 end)
 
 -- =========================================================
--- 10) УВЕДОМЛЕНИЕ (для Anti Dead Counter)
+-- 8) УВЕДОМЛЕНИЕ (для Anti Dead Counter)
 -- =========================================================
 local notifGui = Instance.new("ScreenGui")
 notifGui.Name = "ID:11915758727_Notif"
@@ -1198,7 +1175,7 @@ local function showCounterNotification(nick, duration)
 end
 
 -- =========================================================
--- 11) УДАЛЕНИЕ "0" ПОСЛЕ DEATH COUNTER
+-- 9) УДАЛЕНИЕ "0" ПОСЛЕ DEATH COUNTER
 -- =========================================================
 local function looksLikeZero(text)
     if type(text) ~= "string" then return false end
@@ -1317,9 +1294,9 @@ local function applyHighlight(character, color, name, duration)
 end
 
 -- =========================================================
--- 12) ANTI DEAD COUNTER
+-- 10) ANTI DEAD COUNTER
 -- =========================================================
-local ADC_Y = NC_Y + ROW_H + 6
+local ADC_Y = 280
 local antiCounterActive = false
 local tsbWatchers = {}
 local counterCooldown = {}
@@ -1460,19 +1437,6 @@ local function watchReviveAnim(humanoid)
     end)
 end
 
-local function hookCharacterRevive(character)
-    if not character then return end
-    local humanoid = character:FindFirstChildOfClass("Humanoid")
-    if humanoid then
-        watchReviveAnim(humanoid)
-    else
-        task.spawn(function()
-            local h = character:WaitForChild("Humanoid", 5)
-            if h then watchReviveAnim(h) end
-        end)
-    end
-end
-
 local AntiCounterBtn = makeToggle("Anti dead counter", ADC_Y)
 AntiCounterBtn.MouseButton1Click:Connect(function()
     if not FCS.Unlocked then return end
@@ -1503,7 +1467,7 @@ Players.PlayerRemoving:Connect(function(p)
 end)
 
 -- =========================================================
--- 13) СЛАЙДЕРЫ
+-- 11) СЛАЙДЕРЫ
 -- =========================================================
 local draggingSlider = false
 local activeSlider = nil
