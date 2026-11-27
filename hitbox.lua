@@ -25,7 +25,7 @@ if not hasDrawing then
     warn("[Hitbox] Drawing API недоступен — ESP будет отключён")
 end
 
--- ===== Корень страницы (для защиты от дублей) =====
+-- ===== Корень страницы =====
 local Root = Instance.new("Frame")
 Root.Name = "HitboxRoot"
 Root.Size = UDim2.fromScale(1, 1)
@@ -761,11 +761,14 @@ local function stopPing()
     clearPingTags()
 end
 
--- ===== ESP =====
+-- =========================================================
+-- ESP (Интегрированы функции из EXUNYS ESP)
+-- =========================================================
 local espBoxes = {}
 local espTracers = {}
 local espNameTags = {}
 local espDistanceTags = {}
+local espHealthBars = {}
 local espPlayerAddedConn = nil
 local espPlayerConns = {}
 
@@ -784,49 +787,95 @@ local function espCreateText(size)
     return text
 end
 
+local function espCreateBarPair()
+    if not hasDrawing then return nil end
+    local outline = Drawing.new("Square")
+    outline.Thickness = 1
+    outline.Filled = true
+    outline.Visible = false
+    outline.Color = Color3.fromRGB(0, 0, 0)
+
+    local bar = Drawing.new("Square")
+    bar.Thickness = 1
+    bar.Filled = true
+    bar.Visible = false
+    bar.Color = Color3.fromRGB(0, 255, 0)
+    return { Outline = outline, Bar = bar }
+end
+
 local function espCreate(character, plr)
     if not hasDrawing then return end
     if not character or espBoxes[character] then return end
     if plr == Player then return end
+
     local hrp = character:FindFirstChild("HumanoidRootPart")
     local head = character:FindFirstChild("Head")
     local humanoid = character:FindFirstChild("Humanoid")
     if not hrp or not head then return end
+
     local box = Drawing.new("Square")
-    box.Visible = false; box.Color = Color3.fromRGB(255, 255, 255); box.Filled = false; box.Transparency = 1; box.Thickness = 1
+    box.Visible = false
+    box.Color = Color3.fromRGB(255, 255, 255)
+    box.Filled = false
+    box.Transparency = 1
+    box.Thickness = 1
+
     local line = Drawing.new("Line")
-    line.Visible = false; line.Color = Color3.fromRGB(255, 255, 255); line.Thickness = 1; line.Transparency = 1
+    line.Visible = false
+    line.Color = Color3.fromRGB(255, 255, 255)
+    line.Thickness = 1
+    line.Transparency = 1
+
     local nameTag = espCreateText(11)
     local distTag = espCreateText(11)
+
+    if not espHealthBars[plr] then
+        espHealthBars[plr] = espCreateBarPair()
+    end
+
     local conn = RunService.RenderStepped:Connect(function()
         if not espEnabled then
             box.Visible = false; line.Visible = false
             if nameTag then nameTag.Visible = false end
             if distTag then distTag.Visible = false end
+            if espHealthBars[plr] then
+                espHealthBars[plr].Outline.Visible = false
+                espHealthBars[plr].Bar.Visible = false
+            end
             return
         end
+
         hrp = character:FindFirstChild("HumanoidRootPart")
         head = character:FindFirstChild("Head")
         humanoid = character:FindFirstChild("Humanoid")
         if not hrp or not head or not humanoid then return end
         if not Camera then return end
+
         local pos, visible = Camera:WorldToViewportPoint(hrp.Position)
         local headPos = Camera:WorldToViewportPoint(head.Position + Vector3.new(0, 0.3, 0))
         local legPos = Camera:WorldToViewportPoint(hrp.Position - Vector3.new(0, 2.5, 0))
         local distance = (Camera.CFrame.Position - hrp.Position).Magnitude
+
         if visible and distance <= 1000 then
             local scale = 1 / (pos.Z * math.tan(math.rad(Camera.FieldOfView * 0.5)) * 2) * 100
             local width, height = math.floor(40 * scale), math.floor(62 * scale)
             local position = Vector2.new(pos.X - width / 2, pos.Y - height / 2)
-            box.Size = Vector2.new(width, height); box.Position = position; box.Visible = true
+
+            box.Size = Vector2.new(width, height)
+            box.Position = position
+            box.Visible = true
+
             line.From = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y - 50)
-            line.To = Vector2.new(pos.X, pos.Y); line.Visible = true
+            line.To = Vector2.new(pos.X, pos.Y)
+            line.Visible = true
+
             if nameTag then
                 nameTag.Position = Vector2.new(headPos.X, headPos.Y - 20)
                 nameTag.Text = getDisplayName(plr)
                 nameTag.Color = Color3.fromRGB(255, 255, 255)
                 nameTag.Visible = true
             end
+
             if distTag then
                 if Player.Character and Player.Character:FindFirstChild("HumanoidRootPart") then
                     local dist = math.floor((hrp.Position - Player.Character.HumanoidRootPart.Position).Magnitude)
@@ -838,12 +887,46 @@ local function espCreate(character, plr)
                     distTag.Visible = false
                 end
             end
+
+            -- Полоска здоровья (обновление каждый кадр)
+            local outline = espHealthBars[plr].Outline
+            local bar = espHealthBars[plr].Bar
+            
+            local barHeight = height * 0.95
+            local barWidth = 2
+            local barXPos = position.X - barWidth - 5
+            local barYPos = position.Y + (height - barHeight) / 2
+            
+            local hpPercent = humanoid.Health / humanoid.MaxHealth
+            local filledHeight = barHeight * hpPercent
+            
+            outline.Size = Vector2.new(barWidth + 2, barHeight + 2)
+            outline.Position = Vector2.new(barXPos - 1, barYPos - 1)
+            outline.Visible = true
+            
+            bar.Size = Vector2.new(barWidth, filledHeight)
+            bar.Position = Vector2.new(barXPos, barYPos + (barHeight - filledHeight))
+            
+            if humanoid.Health <= 20 then
+                bar.Color = Color3.fromRGB(255, 0, 0)
+            elseif humanoid.Health <= 65 then
+                bar.Color = Color3.fromRGB(255, 255, 0)
+            else
+                bar.Color = Color3.fromRGB(0, 255, 0)
+            end
+            
+            bar.Visible = true
         else
             box.Visible = false; line.Visible = false
             if nameTag then nameTag.Visible = false end
             if distTag then distTag.Visible = false end
+            if espHealthBars[plr] then
+                espHealthBars[plr].Outline.Visible = false
+                espHealthBars[plr].Bar.Visible = false
+            end
         end
     end)
+
     espBoxes[character] = { Box = box, Connection = conn }
     espTracers[character] = { Line = line }
     if nameTag then espNameTags[plr] = nameTag end
@@ -862,12 +945,18 @@ local function espRemove(character, plr)
     end
     if espNameTags[plr] then espNameTags[plr]:Remove(); espNameTags[plr] = nil end
     if espDistanceTags[plr] then espDistanceTags[plr]:Remove(); espDistanceTags[plr] = nil end
+    if espHealthBars[plr] then
+        if espHealthBars[plr].Outline then espHealthBars[plr].Outline:Remove() end
+        if espHealthBars[plr].Bar then espHealthBars[plr].Bar:Remove() end
+        espHealthBars[plr] = nil
+    end
 end
 
 local function espSetupPlayer(plr)
     if plr == Player then return end
     if espPlayerConns[plr] then return end
     espPlayerConns[plr] = true
+
     plr.CharacterAdded:Connect(function(char)
         espRemove(char, plr)
         task.wait(0.1)
@@ -906,7 +995,11 @@ local function stopESP()
     end
     for plr, tag in pairs(espNameTags) do tag:Remove() end
     for plr, tag in pairs(espDistanceTags) do tag:Remove() end
-    espBoxes = {}; espTracers = {}; espNameTags = {}; espDistanceTags = {}
+    for plr, hb in pairs(espHealthBars) do
+        if hb.Outline then hb.Outline:Remove() end
+        if hb.Bar then hb.Bar:Remove() end
+    end
+    espBoxes = {}; espTracers = {}; espNameTags = {}; espDistanceTags = {}; espHealthBars = {}
     espPlayerConns = {}
 end
 
@@ -1025,7 +1118,7 @@ local draggingXRaySlider = false
 XRaySlider.Back.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
         draggingXRaySlider = true
-        setXRayFromX(XRaySlider, input.Position.X)
+        setXRayFromPos(XRaySlider, input.Position.X)
     end
 end)
 
@@ -1067,7 +1160,7 @@ Player.CharacterAdded:Connect(function()
     if xrayPlayersEnabled then refreshXrayPlayers() end
 end)
 
--- ===== ЦИКЛ ОБНОВЛЕНИЯ (авто-обновление Xray игроков и NPC) =====
+-- ===== ЦИКЛ ОБНОВЛЕНИЯ =====
 task.spawn(function()
     while true do
         task.wait(1)
