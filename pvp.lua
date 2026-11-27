@@ -1172,10 +1172,10 @@ local function showCounterNotification(nick, duration)
     notifTimer.TextTransparency = 0
     task.spawn(function()
         local left = duration
-        while left > 0 and myThread == notifHideThread do
+        while left >= 0 and myThread == notifHideThread do
             if notifTimer.Parent then notifTimer.Text = tostring(math.max(0, math.ceil(left))) .. "s" end
-            task.wait(0.25)
-            left = left - 0.25
+            task.wait(1)
+            left = left - 1
         end
         if myThread ~= notifHideThread then return end
         for i = 0, 1, 0.1 do
@@ -1291,15 +1291,15 @@ local function applyHighlight(character, color, name, duration)
         timerLabel.Parent = bbgui
         task.spawn(function()
             local timeLeft = duration
-            while timeLeft > 0 and bbgui.Parent do
+            while timeLeft >= 0 and bbgui.Parent do
+                if timerLabel.Parent then timerLabel.Text = tostring(math.max(0, math.ceil(timeLeft))) end
                 task.wait(1)
                 timeLeft = timeLeft - 1
-                if timerLabel.Parent then timerLabel.Text = tostring(math.max(0, math.ceil(timeLeft))) end
             end
         end)
     end
     if duration and duration > 0 then
-        task.delay(duration, function()
+        task.delay(duration + 1, function()
             if blinkConn then blinkConn:Disconnect() end
             if hl then hl:Destroy() end
             if box then box:Destroy() end
