@@ -610,16 +610,18 @@ local function stopObjectHitbox()
 end
 
 -- ===== X-RAY =====
-local function isAnyPlayerCharacter(inst)
+local function isAnyCharacterOrNpc(inst)
     for _, plr in ipairs(Players:GetPlayers()) do
         if plr.Character and inst:IsDescendantOf(plr.Character) then return true end
     end
+    local model = inst:FindFirstAncestorOfClass("Model")
+    if model and model:FindFirstChildOfClass("Humanoid") then return true end
     return false
 end
 
 local function applyXray(inst)
     if not inst:IsA("BasePart") then return end
-    if isAnyPlayerCharacter(inst) then return end
+    if isAnyCharacterOrNpc(inst) then return end
     if xrayOriginals[inst] == nil then
         xrayOriginals[inst] = inst.Transparency
     end
@@ -1065,15 +1067,7 @@ Player.CharacterAdded:Connect(function()
     if xrayPlayersEnabled then refreshXrayPlayers() end
 end)
 
-RunService.RenderStepped:Connect(function()
-    if hitboxPlayersEnabled then updatePlayerBoxes() end
-    if hitboxNpcEnabled then updateNpcBoxes() end
-    if hitboxObjectEnabled then
-        processQueue()
-        updateObjectBoxes()
-    end
-end)
-
+-- ===== ЦИКЛ ОБНОВЛЕНИЯ (авто-обновление Xray игроков и NPC) =====
 task.spawn(function()
     while true do
         task.wait(1)
@@ -1086,5 +1080,14 @@ task.spawn(function()
             scanForMissing()
             cleanupFarObjects()
         end
+    end
+end)
+
+RunService.RenderStepped:Connect(function()
+    if hitboxPlayersEnabled then updatePlayerBoxes() end
+    if hitboxNpcEnabled then updateNpcBoxes() end
+    if hitboxObjectEnabled then
+        processQueue()
+        updateObjectBoxes()
     end
 end)
