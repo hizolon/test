@@ -85,10 +85,11 @@ end
 
 -- ===== Кнопки =====
 local HitboxPlayerBtn  = makeToggle("Hitbox player", 6, 28)
-local HitboxNpcBtn     = makeToggle("Hitbox NPC", 6 + 28 + SPACING, 28)
-local HitboxObjectBtn  = makeToggle("Hitbox object", 6 + 2 * (28 + SPACING), 28)
+local XrayPlayerBtn    = makeToggle("Xray player", 6 + 28 + SPACING, 28)
+local HitboxNpcBtn     = makeToggle("Hitbox NPC", 6 + 2 * (28 + SPACING), 28)
+local XrayNpcBtn       = makeToggle("Xray NPC", 6 + 3 * (28 + SPACING), 28)
 
-local PING_Y = 6 + 3 * (28 + SPACING)
+local PING_Y = 6 + 4 * (28 + SPACING)
 local DevicePingBtn = makeToggle("Ping tag", PING_Y, 28)
 
 local ESP_Y = PING_Y + 28 + SPACING
@@ -354,6 +355,91 @@ local function updateNpcBoxes()
                 if nd then npcBoxes[model] = nd end
             else
                 updateEdges(data.edges, primary.CFrame)
+            end
+        end
+    end
+end
+
+-- ===== XRAY PLAYER =====
+local xrayPlayersEnabled = false
+local xrayPlayerHighlights = {}
+
+local function clearXrayPlayers()
+    for plr, hl in pairs(xrayPlayerHighlights) do
+        if hl then hl:Destroy() end
+    end
+    xrayPlayerHighlights = {}
+end
+
+local function createXrayPlayer(plr)
+    local char = plr.Character
+    if not char then return nil end
+    local hl = Instance.new("Highlight")
+    hl.Name = "XrayPlayerHighlight"
+    hl.FillColor = Color3.fromRGB(255, 0, 0)
+    hl.FillTransparency = 0.7
+    hl.OutlineColor = Color3.fromRGB(255, 0, 0)
+    hl.OutlineTransparency = 0
+    hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+    hl.Adornee = char
+    hl.Parent = char
+    return hl
+end
+
+local function refreshXrayPlayers()
+    for plr, hl in pairs(xrayPlayerHighlights) do
+        if not plr.Character or not hl or hl.Parent ~= plr.Character then
+            if hl then hl:Destroy() end
+            xrayPlayerHighlights[plr] = nil
+        end
+    end
+    for _, plr in ipairs(Players:GetPlayers()) do
+        if plr ~= Player and plr.Character then
+            if not xrayPlayerHighlights[plr] then
+                local hl = createXrayPlayer(plr)
+                if hl then xrayPlayerHighlights[plr] = hl end
+            end
+        end
+    end
+end
+
+-- ===== XRAY NPC =====
+local xrayNpcEnabled = false
+local xrayNpcHighlights = {}
+
+local function clearXrayNpcs()
+    for model, hl in pairs(xrayNpcHighlights) do
+        if hl then hl:Destroy() end
+    end
+    xrayNpcHighlights = {}
+end
+
+local function createXrayNpc(model)
+    if not model or not model.Parent then return nil end
+    local hl = Instance.new("Highlight")
+    hl.Name = "XrayNpcHighlight"
+    hl.FillColor = Color3.fromRGB(0, 0, 255)
+    hl.FillTransparency = 0.7
+    hl.OutlineColor = Color3.fromRGB(0, 0, 255)
+    hl.OutlineTransparency = 0
+    hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+    hl.Adornee = model
+    hl.Parent = model
+    return hl
+end
+
+local function refreshXrayNpcs()
+    for model, hl in pairs(xrayNpcHighlights) do
+        if not model.Parent or not model:FindFirstChildOfClass("Humanoid") or isPlayerCharacterModel(model) or not hl or hl.Parent ~= model then
+            if hl then hl:Destroy() end
+            xrayNpcHighlights[model] = nil
+        end
+    end
+    for _, inst in ipairs(Workspace:GetDescendants()) do
+        if inst:IsA("Model") and inst:FindFirstChildOfClass("Humanoid") and not isPlayerCharacterModel(inst) then
+            if not xrayNpcHighlights[inst] then
+                local hl = createXrayNpc(inst)
+                if hl then xrayNpcHighlights[inst] = hl end
             end
         end
     end
@@ -830,6 +916,13 @@ HitboxPlayerBtn.MouseButton1Click:Connect(function()
     if hitboxPlayersEnabled then refreshPlayerBoxes() else clearPlayerBoxes() end
 end)
 
+XrayPlayerBtn.MouseButton1Click:Connect(function()
+    xrayPlayersEnabled = not xrayPlayersEnabled
+    XrayPlayerBtn.Text = "Xray player: " .. (xrayPlayersEnabled and "ON" or "OFF")
+    XrayPlayerBtn.BackgroundColor3 = xrayPlayersEnabled and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(60, 60, 60)
+    if xrayPlayersEnabled then refreshXrayPlayers() else clearXrayPlayers() end
+end)
+
 HitboxNpcBtn.MouseButton1Click:Connect(function()
     hitboxNpcEnabled = not hitboxNpcEnabled
     HitboxNpcBtn.Text = "Hitbox NPC: " .. (hitboxNpcEnabled and "ON" or "OFF")
@@ -837,11 +930,11 @@ HitboxNpcBtn.MouseButton1Click:Connect(function()
     if hitboxNpcEnabled then refreshNpcBoxes() else clearNpcBoxes() end
 end)
 
-HitboxObjectBtn.MouseButton1Click:Connect(function()
-    hitboxObjectEnabled = not hitboxObjectEnabled
-    HitboxObjectBtn.Text = "Hitbox object: " .. (hitboxObjectEnabled and "ON" or "OFF")
-    HitboxObjectBtn.BackgroundColor3 = hitboxObjectEnabled and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(60, 60, 60)
-    if hitboxObjectEnabled then startObjectHitbox() else stopObjectHitbox() end
+XrayNpcBtn.MouseButton1Click:Connect(function()
+    xrayNpcEnabled = not xrayNpcEnabled
+    XrayNpcBtn.Text = "Xray NPC: " .. (xrayNpcEnabled and "ON" or "OFF")
+    XrayNpcBtn.BackgroundColor3 = xrayNpcEnabled and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(60, 60, 60)
+    if xrayNpcEnabled then refreshXrayNpcs() else clearXrayNpcs() end
 end)
 
 DevicePingBtn.MouseButton1Click:Connect(function()
@@ -952,11 +1045,15 @@ updateXRayVisuals()
 Players.PlayerAdded:Connect(function(plr)
     if pingEnabled and plr ~= Player then watchPlayerCharacter(plr) end
     if hitboxPlayersEnabled then task.wait(0.5); refreshPlayerBoxes() end
+    if xrayPlayersEnabled then task.wait(0.5); refreshXrayPlayers() end
 end)
 Players.PlayerRemoving:Connect(function(plr)
     local pb = playerBoxes[plr]
     if pb and pb.folder then pb.folder:Destroy() end
     playerBoxes[plr] = nil
+    local hl = xrayPlayerHighlights[plr]
+    if hl then hl:Destroy() end
+    xrayPlayerHighlights[plr] = nil
     removePingTag(plr)
     unwatchPlayerCharacter(plr)
     espPlayerConns[plr] = nil
@@ -965,6 +1062,7 @@ Player.CharacterAdded:Connect(function()
     task.wait(0.5)
     if pingEnabled then refreshPingTags() end
     if hitboxPlayersEnabled then refreshPlayerBoxes() end
+    if xrayPlayersEnabled then refreshXrayPlayers() end
 end)
 
 RunService.RenderStepped:Connect(function()
@@ -982,6 +1080,8 @@ task.spawn(function()
         if pingEnabled then refreshPingTags() end
         if hitboxPlayersEnabled then refreshPlayerBoxes() end
         if hitboxNpcEnabled then refreshNpcBoxes() end
+        if xrayPlayersEnabled then refreshXrayPlayers() end
+        if xrayNpcEnabled then refreshXrayNpcs() end
         if hitboxObjectEnabled then
             scanForMissing()
             cleanupFarObjects()
