@@ -522,7 +522,7 @@ end
 
 -- UI сборка HP
 local saveZonaBtn = hpCreateButton("Save zona", 6)
-saveZonaBtn.Size = UDim2.new(1, -(HP_SIDE_PADDING * 2 + HP_GAP + HP_VALUE_WIDTH), 0, 28)
+saveZonaBtn.button.Size = UDim2.new(1, -(HP_SIDE_PADDING * 2 + HP_GAP + HP_VALUE_WIDTH), 0, 24)
 saveZonaBtn.onChanged = function(en)
     if en then enableSaveZona(50) else disableSaveZona() end
 end
@@ -532,7 +532,7 @@ local SaveZonaKeyBox = Instance.new("TextBox")
 SaveZonaKeyBox.Name = "SaveZonaKeyBox"
 SaveZonaKeyBox.AnchorPoint = Vector2.new(1, 0)
 SaveZonaKeyBox.Position = UDim2.new(1, -HP_SIDE_PADDING, 0, 6)
-SaveZonaKeyBox.Size = UDim2.new(0, HP_VALUE_WIDTH, 0, 28)
+SaveZonaKeyBox.Size = UDim2.new(0, HP_VALUE_WIDTH, 0, 24)
 SaveZonaKeyBox.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
 SaveZonaKeyBox.BorderSizePixel = 0
 SaveZonaKeyBox.Text = "H"
